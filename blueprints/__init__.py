@@ -1,5 +1,5 @@
 from flask import Blueprint
 
-analyzer_bp = Blueprint("analyzer", __name__, url_prefix="/analyzer")
+tracker_bp = Blueprint("tracker", __name__, url_prefix="/tracker")
 
-from . import routes  # noqa: E402, F401
+from . import routes
