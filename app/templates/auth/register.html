@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Create Account — InternAI{% endblock %}
+
+{% block public_content %}
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="auth-logo">
+        <div class="brand-icon" style="width: 48px; height: 48px; font-size: 1.4rem;">AI</div>
+      </div>
+      <h1 class="auth-title">Create Account</h1>
+      <p class="auth-subtitle">Join InternAI and land your next internship</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('auth.register') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+      <div class="form-group">
+        <label for="full_name" class="form-label">Full Name</label>
+        <input 
+          type="text" 
+          id="full_name" 
+          name="full_name" 
+          class="form-control" 
+          placeholder="e.g. Alex Morgan" 
+          value="{{ full_name or '' }}" 
+          required 
+          autofocus
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="email" class="form-label">University / Personal Email</label>
+        <input 
+          type="email" 
+          id="email" 
+          name="email" 
+          class="form-control" 
+          placeholder="alex@university.edu" 
+          value="{{ email or '' }}" 
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="password" class="form-label">Password (min. 8 characters)</label>
+        <input 
+          type="password" 
+          id="password" 
+          name="password" 
+          class="form-control" 
+          placeholder="••••••••" 
+          required 
+          minlength="8"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="confirm_password" class="form-label">Confirm Password</label>
+        <input 
+          type="password" 
+          id="confirm_password" 
+          name="confirm_password" 
+          class="form-control" 
+          placeholder="••••••••" 
+          required 
+          minlength="8"
+        />
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
+        Get Started
+      </button>
+    </form>
+
+    <div style="text-align: center; margin-top: 1.5rem; font-size: 0.88rem; color: var(--text-muted);">
+      Already have an account? 
+      <a href="{{ url_for('auth.login') }}" style="font-weight: 600;">Sign in here</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

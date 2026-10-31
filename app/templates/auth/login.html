@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In — InternAI{% endblock %}
+
+{% block public_content %}
+<div class="auth-wrapper">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="auth-logo">
+        <div class="brand-icon" style="width: 48px; height: 48px; font-size: 1.4rem;">AI</div>
+      </div>
+      <h1 class="auth-title">Welcome Back</h1>
+      <p class="auth-subtitle">Sign in to your InternAI student assistant</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('auth.login') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      {% if next %}
+      <input type="hidden" name="next" value="{{ next }}"/>
+      {% endif %}
+
+      <div class="form-group">
+        <label for="email" class="form-label">Email Address</label>
+        <input 
+          type="email" 
+          id="email" 
+          name="email" 
+          class="form-control" 
+          placeholder="student@university.edu" 
+          value="{{ email or '' }}" 
+          required 
+          autofocus
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="password" class="form-label">Password</label>
+        <input 
+          type="password" 
+          id="password" 
+          name="password" 
+          class="form-control" 
+          placeholder="••••••••" 
+          required
+        />
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
+        Sign In
+      </button>
+    </form>
+
+    <div class="demo-hint-box">
+      <strong>Default Admin Credentials:</strong><br>
+      Email: <code>admin@internai.local</code><br>
+      Password: <code>Admin@123456</code>
+    </div>
+
+    <div style="text-align: center; margin-top: 1.5rem; font-size: 0.88rem; color: var(--text-muted);">
+      Don't have an account? 
+      <a href="{{ url_for('auth.register') }}" style="font-weight: 600;">Create one now</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
