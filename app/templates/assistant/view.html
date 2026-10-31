@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Application Material: {{ doc.job_title or 'Application Document' }} — InternAI{% endblock %}
+
+{% block header_title %}Generated Application Material{% endblock %}
+
+{% block content %}
+<!-- Back Breadcrumb -->
+<div style="margin-bottom: 1.25rem;">
+  <a href="{{ url_for('assistant.index') }}" style="color: var(--text-muted); font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+    ← Back to Saved Materials
+  </a>
+</div>
+
+<!-- Header Card -->
+<div class="card" style="border-left: 5px solid {% if doc.doc_type == 'cover_letter' %}var(--primary){% elif doc.doc_type == 'email' %}#0284c7{% else %}#10b981{% endif %}; margin-bottom: 1.5rem;">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+        <span class="badge {% if doc.doc_type == 'cover_letter' %}badge-primary{% elif doc.doc_type == 'email' %}badge-gray{% else %}badge-success{% endif %}" style="text-transform: uppercase; font-size: 0.72rem; font-weight: 700;">
+          {% if doc.doc_type == 'cover_letter' %}
+            ✉️ Cover Letter
+          {% elif doc.doc_type == 'email' %}
+            📧 Cold Outreach Email
+          {% else %}
+            🎯 Interview Prep Guide
+          {% endif %}
+        </span>
+        <span class="badge badge-gray" style="font-size: 0.72rem;">
+          Tone: {{ doc.tone|capitalize }}
+        </span>
+        <span class="badge badge-gray" style="font-size: 0.72rem;">
+          Updated: {{ doc.updated_at }}
+        </span>
+      </div>
+
+      <h1 style="font-size: 1.65rem; font-weight: 800; color: var(--secondary); margin-bottom: 0.2rem;">
+        {{ doc.job_title or 'Custom Role Application' }}
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">
+        🏢 {{ doc.company or 'Target Organization' }} {% if doc.location %}• {{ doc.location }}{% endif %}
+      </p>
+    </div>
+
+    <!-- Action Buttons -->
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+      <button type="button" class="btn btn-secondary" onclick="copyDocumentToClipboard()">
+        📋 Copy to Clipboard
+      </button>
+      <button type="button" class="btn btn-primary" onclick="toggleEditMode()">
+        ✏️ Edit Document
+      </button>
+      <a href="{{ url_for('assistant.generate_view', job_id=doc.job_id) if doc.job_id else url_for('assistant.generate_view') }}" class="btn btn-outline-primary" title="Regenerate with different tone">
+        🔄 Regenerate
+      </a>
+      <form action="{{ url_for('assistant.delete_document', doc_id=doc.doc_id) }}" method="POST" onsubmit="return confirm('Delete this saved application document?');" style="display: inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-outline-danger" title="Delete Document">
+          ✕
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Main Content Area: View Mode vs Edit Mode -->
+<div class="card" id="view-mode-container" style="background-color: var(--bg-main); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+  <div style="font-family: inherit; font-size: 0.95rem; line-height: 1.7; color: var(--secondary); white-space: pre-wrap; padding: 0.5rem;" id="doc-text-content">{{ doc.content }}</div>
+</div>
+
+<div class="card" id="edit-mode-container" style="display: none; background-color: var(--bg-main); border: 1px solid var(--border-focus);">
+  <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <h2 class="card-title">✏️ Edit Before Saving</h2>
+    <span style="font-size: 0.8rem; color: var(--text-muted);">Customize words, personal anecdotes, or greetings</span>
+  </div>
+
+  <form action="{{ url_for('assistant.edit_document', doc_id=doc.doc_id) }}" method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="form-group">
+      <textarea
+        name="content"
+        id="content_textarea"
+        class="form-control"
+        rows="18"
+        style="font-family: inherit; font-size: 0.95rem; line-height: 1.6;"
+        required
+      >{{ doc.content }}</textarea>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
+      <button type="button" class="btn btn-secondary" onclick="toggleEditMode()">
+        Cancel
+      </button>
+      <button type="submit" class="btn btn-primary">
+        💾 Save Changes
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  function toggleEditMode() {
+    const viewContainer = document.getElementById("view-mode-container");
+    const editContainer = document.getElementById("edit-mode-container");
+    if (editContainer.style.display === "none") {
+      editContainer.style.display = "block";
+      viewContainer.style.display = "none";
+    } else {
+      editContainer.style.display = "none";
+      viewContainer.style.display = "block";
+    }
+  }
+
+  async function copyDocumentToClipboard() {
+    const text = document.getElementById("doc-text-content").innerText;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const temp = document.createElement("textarea");
+        temp.value = text;
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand("copy");
+        document.body.removeChild(temp);
+      }
+      showToast("Document copied to clipboard! Ready to paste into application portal.", "success", 2500);
+    } catch (err) {
+      console.error("Clipboard copy error:", err);
+      showToast("Could not copy automatically. Please select text manually.", "warning");
+    }
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Application Assistant — InternAI{% endblock %}
+
+{% block header_title %}Application Materials & Prep Assistant{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+  <div>
+    <h1 style="font-size: 1.75rem; font-weight: 800; color: var(--secondary);">
+      Application Assistant
+    </h1>
+    <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem;">
+      Generate tailored cover letters, high-converting outreach emails, and role-specific interview prep guides strictly grounded in your real background.
+    </p>
+  </div>
+  <a href="{{ url_for('assistant.generate_view') }}" class="btn btn-primary">
+    ✨ Draft New Application Material
+  </a>
+</div>
+
+<!-- Filter Tabs -->
+<div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+  <a href="{{ url_for('assistant.index', type='all') }}" class="btn btn-sm {% if filter_type == 'all' %}btn-primary{% else %}btn-secondary{% endif %}">
+    All Materials ({{ total_docs }})
+  </a>
+  <a href="{{ url_for('assistant.index', type='cover_letter') }}" class="btn btn-sm {% if filter_type == 'cover_letter' %}btn-primary{% else %}btn-secondary{% endif %}">
+    ✉️ Cover Letters
+  </a>
+  <a href="{{ url_for('assistant.index', type='email') }}" class="btn btn-sm {% if filter_type == 'email' %}btn-primary{% else %}btn-secondary{% endif %}">
+    📧 Cold Outreach Emails
+  </a>
+  <a href="{{ url_for('assistant.index', type='interview_prep') }}" class="btn btn-sm {% if filter_type == 'interview_prep' %}btn-primary{% else %}btn-secondary{% endif %}">
+    🎯 Interview Prep Guides
+  </a>
+</div>
+
+<!-- Document Cards Grid -->
+{% if documents %}
+  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.25rem;">
+    {% for doc in documents %}
+      <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; border-left: 4px solid {% if doc.doc_type == 'cover_letter' %}var(--primary){% elif doc.doc_type == 'email' %}#0284c7{% else %}#10b981{% endif %};">
+        <div>
+          <!-- Type and Tone Header -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <span class="badge {% if doc.doc_type == 'cover_letter' %}badge-primary{% elif doc.doc_type == 'email' %}badge-gray{% else %}badge-success{% endif %}" style="text-transform: uppercase; font-size: 0.7rem; font-weight: 700;">
+              {% if doc.doc_type == 'cover_letter' %}
+                ✉️ Cover Letter
+              {% elif doc.doc_type == 'email' %}
+                📧 Outreach Email
+              {% else %}
+                🎯 Interview Prep
+              {% endif %}
+            </span>
+            <span class="badge badge-gray" style="font-size: 0.7rem;">
+              Tone: {{ doc.tone|capitalize }}
+            </span>
+          </div>
+
+          <!-- Title & Target -->
+          <h2 style="font-size: 1.1rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.25rem;">
+            {{ doc.job_title or 'Custom Role Application' }}
+          </h2>
+          <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+            🏢 {{ doc.company or 'Target Organization' }}
+          </div>
+
+          <!-- Excerpt -->
+          <div style="background-color: var(--bg-subtle); padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.82rem; color: var(--text-main); font-family: monospace; white-space: pre-wrap; max-height: 110px; overflow: hidden; position: relative; line-height: 1.45; border: 1px solid var(--border-color);">
+            {{ doc.content[:240] }}...
+          </div>
+        </div>
+
+        <!-- Footer / Actions -->
+        <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 0.75rem; color: var(--text-muted);">
+            Updated: {{ doc.updated_at }}
+          </span>
+          <div style="display: flex; gap: 0.35rem;">
+            <a href="{{ url_for('assistant.view_document', doc_id=doc.doc_id) }}" class="btn btn-secondary btn-sm">
+              View & Edit →
+            </a>
+            <form action="{{ url_for('assistant.delete_document', doc_id=doc.doc_id) }}" method="POST" onsubmit="return confirm('Delete this saved document?');" style="display: inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete Document">
+                ✕
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty-state">
+    <div class="empty-icon">✍️</div>
+    <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.4rem;">
+      No Saved Application Materials Found
+    </h3>
+    <p class="empty-text" style="max-width: 480px; margin: 0 auto 1.25rem;">
+      Select an internship from your analyzed jobs to draft customized cover letters, cold outreach emails, or interview questions tailored with zero hallucination.
+    </p>
+    <a href="{{ url_for('assistant.generate_view') }}" class="btn btn-primary">
+      ✨ Draft Application Materials Now
+    </a>
+  </div>
+{% endif %}
+{% endblock %}

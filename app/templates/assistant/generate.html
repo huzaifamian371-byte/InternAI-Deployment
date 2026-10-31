@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Draft Application Materials — InternAI{% endblock %}
+
+{% block header_title %}Application Assistant Generator{% endblock %}
+
+{% block content %}
+<!-- Back Breadcrumb -->
+<div style="margin-bottom: 1.25rem;">
+  <a href="{{ url_for('assistant.index') }}" style="color: var(--text-muted); font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+    ← Back to Application Materials
+  </a>
+</div>
+
+<div class="card" style="max-width: 800px; margin: 0 auto; border-top: 5px solid var(--primary);">
+  <div class="card-header">
+    <div>
+      <h1 class="card-title" style="font-size: 1.5rem;">Draft Tailored Application Materials</h1>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 0.25rem;">
+        Generate cover letters, outreach emails, or role-specific interview prep guides strictly grounded in your authentic profile.
+      </p>
+    </div>
+  </div>
+
+  <!-- Anti-Hallucination Assurance Banner -->
+  <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-md); padding: 0.85rem 1rem; margin-bottom: 1.5rem; display: flex; align-items: flex-start; gap: 0.65rem;">
+    <div style="font-size: 1.25rem;">🛡️</div>
+    <div style="font-size: 0.85rem; color: #166534; line-height: 1.45;">
+      <strong>Zero Hallucination Guarantee:</strong> InternAI only references your real degrees, coursework, skills, and portfolio projects from your profile. It never invents experience or fake qualifications.
+    </div>
+  </div>
+
+  <form action="{{ url_for('assistant.generate_view') }}" method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <!-- 1. Select Target Job -->
+    <div class="form-group" style="margin-bottom: 1.25rem;">
+      <label class="form-label" for="job_id">
+        <strong>1. Select Target Internship</strong> <span style="color: var(--primary);">*</span>
+      </label>
+      <select name="job_id" id="job_id" class="form-control" onchange="toggleCustomFields(this.value)">
+        <option value="">-- Or enter custom job details below --</option>
+        {% for j in available_jobs %}
+          <option value="{{ j.job_id }}" {% if target_job_id == j.job_id %}selected{% endif %}>
+            {{ j.title }} — {{ j.company }} ({{ j.location }})
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Custom Job Fallback Fields -->
+    <div id="custom-fields-container" style="display: {% if target_job_id %}none{% else %}block{% endif %}; background-color: var(--bg-subtle); padding: 1rem; border-radius: var(--radius-md); border: 1px dashed var(--border-color); margin-bottom: 1.5rem;">
+      <div style="font-size: 0.85rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.75rem;">
+        Custom Job Particulars
+      </div>
+      <div class="grid-2" style="margin-bottom: 0.75rem;">
+        <div>
+          <label class="form-label" for="custom_title" style="font-size: 0.82rem;">Job / Role Title</label>
+          <input type="text" name="custom_title" id="custom_title" class="form-control" placeholder="e.g. Backend Engineering Intern">
+        </div>
+        <div>
+          <label class="form-label" for="custom_company" style="font-size: 0.82rem;">Company Name</label>
+          <input type="text" name="custom_company" id="custom_company" class="form-control" placeholder="e.g. Stripe, Datadog">
+        </div>
+      </div>
+      <div>
+        <label class="form-label" for="custom_notes" style="font-size: 0.82rem;">Key Requirements / Description Notes</label>
+        <textarea name="custom_notes" id="custom_notes" class="form-control" rows="3" placeholder="Paste snippet of requirements (e.g. Python, REST APIs, PostgreSQL, AWS)..."></textarea>
+      </div>
+    </div>
+
+    <!-- 2. Select Document Type -->
+    <div class="form-group" style="margin-bottom: 1.5rem;">
+      <label class="form-label">
+        <strong>2. Choose Material to Generate</strong> <span style="color: var(--primary);">*</span>
+      </label>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem;">
+        <label style="border: 2px solid var(--border-color); border-radius: var(--radius-md); padding: 0.85rem; cursor: pointer; display: flex; flex-direction: column; gap: 0.25rem;" class="doc-type-radio-label">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <input type="radio" name="doc_type" value="cover_letter" checked>
+            <strong style="color: var(--secondary); font-size: 0.95rem;">✉️ Cover Letter</strong>
+          </div>
+          <span style="font-size: 0.8rem; color: var(--text-muted); margin-left: 1.5rem;">
+            Tailored 300-450 word letter connecting your projects and skills to the company's stack.
+          </span>
+        </label>
+
+        <label style="border: 2px solid var(--border-color); border-radius: var(--radius-md); padding: 0.85rem; cursor: pointer; display: flex; flex-direction: column; gap: 0.25rem;" class="doc-type-radio-label">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <input type="radio" name="doc_type" value="email">
+            <strong style="color: var(--secondary); font-size: 0.95rem;">📧 Cold Outreach Email</strong>
+          </div>
+          <span style="font-size: 0.8rem; color: var(--text-muted); margin-left: 1.5rem;">
+            Concise, high-converting 150-word email with subject line to message recruiters or engineers.
+          </span>
+        </label>
+
+        <label style="border: 2px solid var(--border-color); border-radius: var(--radius-md); padding: 0.85rem; cursor: pointer; display: flex; flex-direction: column; gap: 0.25rem;" class="doc-type-radio-label">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <input type="radio" name="doc_type" value="interview_prep">
+            <strong style="color: var(--secondary); font-size: 0.95rem;">🎯 Interview Prep Guide</strong>
+          </div>
+          <span style="font-size: 0.8rem; color: var(--text-muted); margin-left: 1.5rem;">
+            4-6 role-specific questions and STAR response frameworks referencing your actual projects.
+          </span>
+        </label>
+      </div>
+    </div>
+
+    <!-- 3. Tone Selector -->
+    <div class="form-group" style="margin-bottom: 2rem;">
+      <label class="form-label">
+        <strong>3. Select Communication Tone</strong>
+      </label>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem;">
+        <label style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.75rem; cursor: pointer; display: flex; align-items: flex-start; gap: 0.5rem;">
+          <input type="radio" name="tone" value="formal" checked style="margin-top: 0.2rem;">
+          <div>
+            <strong style="font-size: 0.9rem; color: var(--secondary); display: block;">🏛️ Formal</strong>
+            <span style="font-size: 0.78rem; color: var(--text-muted);">Traditional corporate etiquette, respectful, academic, polished.</span>
+          </div>
+        </label>
+
+        <label style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.75rem; cursor: pointer; display: flex; align-items: flex-start; gap: 0.5rem;">
+          <input type="radio" name="tone" value="friendly" style="margin-top: 0.2rem;">
+          <div>
+            <strong style="font-size: 0.9rem; color: var(--secondary); display: block;">🤝 Friendly & Warm</strong>
+            <span style="font-size: 0.78rem; color: var(--text-muted);">Enthusiastic, collaborative, approachable, modern tech culture.</span>
+          </div>
+        </label>
+
+        <label style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.75rem; cursor: pointer; display: flex; align-items: flex-start; gap: 0.5rem;">
+          <input type="radio" name="tone" value="confident" style="margin-top: 0.2rem;">
+          <div>
+            <strong style="font-size: 0.9rem; color: var(--secondary); display: block;">⚡ Confident & Direct</strong>
+            <span style="font-size: 0.78rem; color: var(--text-muted);">Bold, results-oriented, emphasizes immediate engineering ownership.</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.85rem; font-size: 1rem;">
+      ✨ Generate with AI
+    </button>
+  </form>
+</div>
+
+<script>
+  function toggleCustomFields(val) {
+    const customContainer = document.getElementById("custom-fields-container");
+    if (val && val.trim() !== "") {
+      customContainer.style.display = "none";
+    } else {
+      customContainer.style.display = "block";
+    }
+  }
+</script>
+{% endblock %}
