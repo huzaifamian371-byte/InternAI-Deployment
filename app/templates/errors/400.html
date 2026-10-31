@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Bad Request (400) — InternAI{% endblock %}
+
+{% block content %}
+<div style="text-align: center; padding: 5rem 1rem;">
+  <div style="font-size: 4rem; margin-bottom: 1rem;">⚠️</div>
+  <h1 style="font-size: 2rem; font-weight: 800; color: var(--secondary);">400 — Bad Request</h1>
+  <p style="color: var(--text-muted); max-width: 500px; margin: 0.5rem auto 2rem;">
+    The request could not be understood or was missing required parameters.
+  </p>
+  <a href="{{ url_for('index') }}" class="btn btn-primary">Return to Dashboard</a>
+</div>
+{% endblock %}
