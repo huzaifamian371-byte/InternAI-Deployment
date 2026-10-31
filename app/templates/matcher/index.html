@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}AI Skill Matcher — InternAI{% endblock %}
+
+{% block header_title %}Skill Matcher{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+  <h1 style="font-size: 1.75rem; font-weight: 800; color: var(--secondary); letter-spacing: -0.02em;">
+    AI Skill Matcher 🎯
+  </h1>
+  <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem;">
+    Compare your profile skills against target internship requirements with semantic synonym matching and explainable scoring.
+  </p>
+</div>
+
+<!-- Profile Readiness Tip -->
+<div class="card" style="background: linear-gradient(135deg, #ffffff 0%, var(--primary-light) 100%); border-color: var(--primary-border); margin-bottom: 2rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <div style="font-weight: 700; font-size: 1.05rem; color: var(--secondary);">
+        Profile Skills Count: <strong>{{ student_skills_count }}</strong>
+      </div>
+      <p style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.2rem;">
+        {% if student_skills_count < 3 %}
+          ⚠️ You have few skills in your profile. Add more skills to improve your match percentages!
+        {% else %}
+          ✓ Your profile has enough skills for accurate semantic matching.
+        {% endif %}
+      </p>
+    </div>
+    <a href="{{ url_for('profile.index') }}" class="btn btn-outline-primary btn-sm">
+      Update Profile Skills →
+    </a>
+  </div>
+</div>
+
+<!-- Analyzed Jobs List -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Select an Opportunity to Match</h2>
+      <p class="card-subtitle">Choose an analyzed job to compare your qualifications</p>
+    </div>
+    <a href="{{ url_for('analyzer.index') }}" class="btn btn-primary btn-sm">
+      ➕ Analyze New Job
+    </a>
+  </div>
+
+  {% if jobs %}
+  <div style="overflow-x: auto;">
+    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+      <thead>
+        <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-muted);">
+          <th style="padding: 0.85rem 0.75rem;">Role & Company</th>
+          <th style="padding: 0.85rem 0.75rem;">Location & Type</th>
+          <th style="padding: 0.85rem 0.75rem;">Requirements</th>
+          <th style="padding: 0.85rem 0.75rem;">Match Score</th>
+          <th style="padding: 0.85rem 0.75rem; text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for j in jobs %}
+        <tr style="border-bottom: 1px solid var(--border-color);">
+          <td style="padding: 0.85rem 0.75rem;">
+            <div style="font-weight: 700; color: var(--secondary);">{{ j.title }}</div>
+            <div style="font-size: 0.82rem; color: var(--text-muted);">🏢 {{ j.company }}</div>
+          </td>
+          <td style="padding: 0.85rem 0.75rem;">
+            <span class="badge badge-gray" style="text-transform: capitalize;">{{ j.work_type }}</span>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;">📍 {{ j.location or 'Not specified' }}</div>
+          </td>
+          <td style="padding: 0.85rem 0.75rem;">
+            <span class="badge badge-gray">{{ j.req_count }} skills listed</span>
+          </td>
+          <td style="padding: 0.85rem 0.75rem;">
+            {% if j.match_percentage is not none %}
+              <span class="badge {% if j.match_percentage >= 75 %}badge-advanced{% elif j.match_percentage >= 50 %}badge-intermediate{% else %}badge-beginner{% endif %}">
+                🎯 {{ j.match_percentage }}% Match
+              </span>
+            {% else %}
+              <span class="badge badge-gray">Not Calculated</span>
+            {% endif %}
+          </td>
+          <td style="padding: 0.85rem 0.75rem; text-align: right;">
+            <a href="{{ url_for('matcher.view_match', job_id=j.job_id) }}" class="btn btn-primary btn-sm">
+              {% if j.match_percentage is not none %}View Match Details{% else %}Run Skill Match{% endif %} →
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align: center; padding: 3rem 1rem; color: var(--text-muted);">
+    <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🎯</div>
+    <div style="font-weight: 600; color: var(--secondary); font-size: 1.05rem;">No jobs analyzed yet</div>
+    <p style="font-size: 0.88rem; margin-top: 0.35rem;">
+      First paste a job description into the Job Analyzer to extract requirements.
+    </p>
+    <a href="{{ url_for('analyzer.index') }}" class="btn btn-primary btn-sm" style="margin-top: 1rem;">
+      Go to Job Analyzer
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}Skill Match: {{ job.title }} — InternAI{% endblock %}
+
+{% block header_title %}Skill Match Breakdown{% endblock %}
+
+{% block content %}
+<!-- Back Breadcrumb -->
+<div style="margin-bottom: 1.25rem;">
+  <a href="{{ url_for('matcher.index') }}" style="color: var(--text-muted); font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+    ← Back to Skill Matcher
+  </a>
+</div>
+
+<!-- Match Score Hero Banner -->
+<div class="card" style="border-left: 5px solid {% if match_result.match_percentage >= 75 %}var(--success){% elif match_result.match_percentage >= 50 %}var(--primary){% else %}var(--warning){% endif %}; margin-bottom: 1.5rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+        <span class="badge badge-gray">🏢 {{ job.company }}</span>
+        <span class="badge badge-gray">📍 {{ job.location or 'Location not specified' }}</span>
+      </div>
+      <h1 style="font-size: 1.65rem; font-weight: 800; color: var(--secondary); margin-bottom: 0.25rem;">
+        {{ job.title }}
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.88rem;">
+        Semantic match computed across {{ match_result.matched_skills|length + match_result.missing_skills|length }} total job requirements against your profile skills.
+      </p>
+    </div>
+
+    <!-- Match Percentage Display -->
+    <div style="display: flex; align-items: center; gap: 1.25rem; background-color: var(--bg-subtle); padding: 1.25rem 1.5rem; border-radius: var(--radius-lg); border: 1px solid var(--border-color); text-align: center;">
+      <div>
+        <div style="font-size: 2.75rem; font-weight: 900; line-height: 1; color: {% if match_result.match_percentage >= 75 %}var(--success){% elif match_result.match_percentage >= 50 %}var(--primary){% else %}var(--warning){% endif %};">
+          {{ match_result.match_percentage }}%
+        </div>
+        <div style="font-size: 0.82rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-top: 0.35rem;">
+          {% if match_result.match_percentage >= 75 %}
+            Strong Alignment
+          {% elif match_result.match_percentage >= 50 %}
+            Moderate Alignment
+          {% else %}
+            Skill Gap Focus Needed
+          {% endif %}
+        </div>
+      </div>
+
+      <form method="POST" action="{{ url_for('matcher.recalculate', job_id=job.job_id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <button type="submit" class="btn btn-secondary btn-sm" title="Re-evaluate after updating your profile skills">
+          🔄 Recalculate
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Explainable Formula & Weighting Card -->
+<div class="card" style="padding: 1.25rem; background-color: #fafafa; margin-bottom: 1.5rem;">
+  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <div style="font-weight: 700; font-size: 0.95rem; color: var(--secondary); display: flex; align-items: center; gap: 0.5rem;">
+        <span>📊</span> Transparent & Explainable Scoring Model
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
+        Score is calculated in Python using deterministic weighting: <strong>75% weight on core mandatory requirements</strong> + <strong>25% weight on preferred skills</strong>.
+      </p>
+    </div>
+    <div style="font-size: 0.85rem; color: var(--text-main); background: #ffffff; padding: 0.5rem 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+      Matched Mandatory: <strong>{{ match_result.matched_skills | selectattr("is_required", "equalto", true) | list | length }}</strong> / {{ required_skills|length }} &nbsp;|&nbsp;
+      Matched Preferred: <strong>{{ match_result.matched_skills | selectattr("is_required", "equalto", false) | list | length }}</strong> / {{ preferred_skills|length }}
+    </div>
+  </div>
+</div>
+
+<!-- Action Workflow Banner -->
+<div class="card" style="background: linear-gradient(135deg, #ffffff 0%, var(--primary-light) 100%); border-color: var(--primary-border); margin-bottom: 2rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--secondary);">
+        Bridge Your Missing Gaps with a Learning Roadmap
+      </h3>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">
+        Generate a personalized week-by-week plan targeting these exact missing skills.
+      </p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+      <a href="{{ url_for('profile.index') }}" class="btn btn-secondary btn-sm">
+        👤 Add Skill to Profile
+      </a>
+      <a href="{{ url_for('analyzer.view_job', job_id=job.job_id) }}" class="btn btn-outline-primary btn-sm">
+        📄 View Job Details
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- 1. Matched Skills Column (Green) -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h2 class="card-title" style="color: var(--success);">
+          ✓ Matched Skills ({{ match_result.matched_skills|length }})
+        </h2>
+        <p class="card-subtitle">Skills you possess that satisfy role requirements</p>
+      </div>
+    </div>
+
+    {% if match_result.matched_skills %}
+    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+      {% for m in match_result.matched_skills %}
+      <div style="background-color: var(--success-bg); border: 1px solid var(--success-border); border-radius: var(--radius-md); padding: 0.85rem; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-weight: 700; color: #065f46; font-size: 0.95rem;">
+            {{ m.requirement }}
+          </div>
+          {% if m.matched_student_skill.lower() != m.requirement.lower() %}
+          <div style="font-size: 0.78rem; color: #047857; margin-top: 0.15rem;">
+            ✦ Semantic match with profile skill: <em>{{ m.matched_student_skill }}</em>
+          </div>
+          {% endif %}
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span class="badge {% if m.student_proficiency == 'Advanced' %}badge-advanced{% elif m.student_proficiency == 'Intermediate' %}badge-intermediate{% else %}badge-beginner{% endif %}">
+            {{ m.student_proficiency }}
+          </span>
+          <span class="badge {% if m.is_required %}badge-gray{% else %}badge-gray{% endif %}" style="font-size: 0.7rem;">
+            {{ 'Mandatory' if m.is_required else 'Preferred' }}
+          </span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.9rem;">
+      No matching skills detected between your profile and this job's criteria.
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- 2. Missing Skills Column (Red / Amber) -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h2 class="card-title" style="color: var(--danger);">
+          ✕ Missing Skills ({{ match_result.missing_skills|length }})
+        </h2>
+        <p class="card-subtitle">Target areas to acquire or add to your profile</p>
+      </div>
+    </div>
+
+    {% if match_result.missing_skills %}
+    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+      {% for m in match_result.missing_skills %}
+      <div style="background-color: {% if m.importance == 'critical' %}var(--danger-bg){% else %}var(--info-bg){% endif %}; border: 1px solid {% if m.importance == 'critical' %}var(--danger-border){% else %}var(--info-border){% endif %}; border-radius: var(--radius-md); padding: 0.85rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+          <span style="font-weight: 700; color: {% if m.importance == 'critical' %}#991b1b{% else %}#0369a1{% endif %}; font-size: 0.95rem;">
+            {{ m.requirement }}
+          </span>
+          <span class="badge {% if m.importance == 'critical' %}badge-danger{% else %}badge-info{% endif %}" style="font-size: 0.7rem; text-transform: uppercase;">
+            {{ 'Critical Gap' if m.importance == 'critical' else 'Nice-to-Have' }}
+          </span>
+        </div>
+        <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.4;">
+          {{ m.reason }}
+        </p>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 2rem; color: var(--success); font-size: 0.9rem; font-weight: 600;">
+      🎉 Outstanding! You meet all listed requirements for this position.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Recommended Action Areas -->
+{% if match_result.areas_to_improve %}
+<div class="card" style="margin-top: 1.5rem;">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">💡 Actionable Focus Areas</h2>
+      <p class="card-subtitle">Technical recommendations to boost your candidacy for this role</p>
+    </div>
+  </div>
+  <ul style="padding-left: 1.5rem; color: var(--text-main); font-size: 0.92rem; line-height: 1.6;">
+    {% for area in match_result.areas_to_improve %}
+    <li style="margin-bottom: 0.4rem;">{{ area }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% endblock %}
