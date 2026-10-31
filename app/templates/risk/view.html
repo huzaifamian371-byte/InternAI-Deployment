@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block title %}Job Risk Assessment — InternAI{% endblock %}
+
+{% block header_title %}Job Risk & Scam Assessment{% endblock %}
+
+{% block content %}
+<!-- Back Breadcrumb -->
+<div style="margin-bottom: 1.25rem;">
+  <a href="{{ url_for('risk.index') }}" style="color: var(--text-muted); font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+    ← Back to Risk Detector
+  </a>
+</div>
+
+<!-- Risk Assessment Hero Card -->
+<div class="card" style="border-left: 6px solid {% if risk_result.risk_level == 'High' %}var(--danger){% elif risk_result.risk_level == 'Medium' %}var(--warning){% elif risk_result.risk_level == 'Low' %}var(--info){% else %}var(--success){% endif %}; margin-bottom: 1.5rem;">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1.5rem;">
+    <div style="flex: 1; min-width: 280px;">
+      <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+        {% if job %}
+          <span class="badge badge-gray">🏢 {{ job.company }}</span>
+          <span class="badge badge-gray">📍 {{ job.location or 'Not specified' }}</span>
+        {% else %}
+          <span class="badge badge-gray">Standalone Scan Result</span>
+        {% endif %}
+      </div>
+      <h1 style="font-size: 1.75rem; font-weight: 800; color: var(--secondary);">
+        {% if job %}{{ job.title }}{% else %}Job Risk Assessment Report{% endif %}
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.92rem; margin-top: 0.4rem; line-height: 1.5;">
+        {{ risk_result.summary }}
+      </p>
+    </div>
+
+    <!-- Risk Level & Score Badge -->
+    <div style="text-align: center; background-color: var(--bg-subtle); padding: 1.25rem 1.75rem; border-radius: var(--radius-lg); border: 1px solid var(--border-color); min-width: 220px;">
+      <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.25rem;">
+        Assessed Risk Level
+      </div>
+      <div style="font-size: 2.25rem; font-weight: 900; line-height: 1; color: {% if risk_result.risk_level == 'High' %}var(--danger){% elif risk_result.risk_level == 'Medium' %}var(--warning){% elif risk_result.risk_level == 'Low' %}var(--info){% else %}var(--success){% endif %};">
+        {{ risk_result.risk_level }} Risk
+      </div>
+      <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-top: 0.4rem;">
+        Score: <strong>{{ risk_result.risk_score }}</strong> / 10.0
+      </div>
+
+      {% if job %}
+      <div style="margin-top: 0.75rem;">
+        <button type="button" class="btn btn-outline-danger btn-sm" onclick="openModal('report-posting-modal')">
+          🚩 Report Posting
+        </button>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- MANDATORY SAFETY DISCLAIMER BANNER -->
+<div class="card" style="background-color: #fffbeb; border: 1px solid #fef3c7; border-left: 5px solid var(--warning); padding: 1rem 1.25rem; margin-bottom: 1.5rem;">
+  <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+    <div style="font-size: 1.35rem;">⚠️</div>
+    <div>
+      <div style="font-weight: 700; font-size: 0.92rem; color: #92400e;">
+        Automated Risk Assessment Disclaimer
+      </div>
+      <p style="font-size: 0.85rem; color: #78350f; margin-top: 0.2rem; line-height: 1.45;">
+        This automated evaluation highlights warning indicators and potential fraud signals. It is <strong>not definitive legal proof of fraud</strong>. Always independently verify employers through your university career development center, corporate domains, and accredited official websites.
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- Left Column: Warning Indicators Found -->
+  <div>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h2 style="font-size: 1.25rem; font-weight: 800; color: var(--secondary);">
+        🔍 Detected Risk Indicators ({{ risk_result.indicators|length }})
+      </h2>
+    </div>
+
+    {% if risk_result.indicators %}
+    <div style="display: flex; flex-direction: column; gap: 1rem;">
+      {% for ind in risk_result.indicators %}
+      <div class="card" style="margin-bottom: 0; border-left: 4px solid {% if ind.severity == 'High' %}var(--danger){% elif ind.severity == 'Medium' %}var(--warning){% else %}var(--info){% endif %};">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+          <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted);">
+            {{ ind.category }}
+          </span>
+          <span class="badge {% if ind.severity == 'High' %}badge-danger{% elif ind.severity == 'Medium' %}badge-warning{% else %}badge-info{% endif %}" style="font-size: 0.7rem; text-transform: uppercase;">
+            {{ ind.severity }} Severity
+          </span>
+        </div>
+
+        <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.5rem;">
+          {{ ind.title }}
+        </h3>
+
+        <!-- Quoted Evidence -->
+        <div style="background-color: #fafafa; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.65rem 0.85rem; margin-bottom: 0.65rem; font-family: monospace; font-size: 0.82rem; color: #1e293b; border-left: 3px solid var(--border-focus);">
+          💬 <em>{{ ind.quoted_evidence }}</em>
+        </div>
+
+        <!-- Explanation -->
+        <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5;">
+          {{ ind.explanation }}
+        </p>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="card" style="text-align: center; padding: 2.5rem 1rem;">
+      <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">✓</div>
+      <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--success);">
+        No Suspicious Risk Indicators Found
+      </h3>
+      <p style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.25rem;">
+        This posting follows standard corporate recruitment conventions with no upfront fee requests, off-platform messaging, or premature sensitive data demands.
+      </p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right Column: Safety Advice Checklist & Actions -->
+  <div>
+    <div style="margin-bottom: 1rem;">
+      <h2 style="font-size: 1.25rem; font-weight: 800; color: var(--secondary);">
+        🛡️ Actionable Safety Guidelines
+      </h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted);">
+        Practical rules to protect your identity, bank accounts, and academic integrity
+      </p>
+    </div>
+
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <ul style="padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.9rem; line-height: 1.5; color: var(--text-main);">
+        {% for advice in risk_result.safety_advice %}
+        <li>{{ advice }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    {% if job %}
+    <!-- Workflow Actions Strip -->
+    <div class="card" style="background-color: var(--bg-subtle);">
+      <h3 class="card-title" style="font-size: 1rem; margin-bottom: 0.75rem;">Next Opportunity Steps</h3>
+      <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+        <a href="{{ url_for('matcher.view_match', job_id=job.job_id) }}" class="btn btn-primary btn-sm">
+          🎯 Evaluate Skill Match
+        </a>
+        <a href="{{ url_for('roadmap.generate', job_id=job.job_id) }}" class="btn btn-secondary btn-sm">
+          🗺️ Build Learning Roadmap
+        </a>
+        <a href="{{ url_for('analyzer.view_job', job_id=job.job_id) }}" class="btn btn-outline-primary btn-sm">
+          📄 Back to Job Details
+        </a>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Posting Raw Text View -->
+    <div class="card">
+      <details>
+        <summary style="cursor: pointer; font-weight: 600; color: var(--primary);">
+          View Posting Excerpt
+        </summary>
+        <div style="margin-top: 0.75rem; background: var(--bg-subtle); padding: 0.85rem; border-radius: var(--radius-md); font-family: monospace; font-size: 0.8rem; white-space: pre-wrap; max-height: 200px; overflow-y: auto;">
+          {{ job_text }}
+        </div>
+      </details>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================================
+     MODAL: Report Suspicious Posting
+     ============================================================================ -->
+{% if job %}
+<div class="modal-backdrop" id="report-posting-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">🚩 Report Suspicious Job Posting</h3>
+      <button type="button" class="modal-close" onclick="closeModal('report-posting-modal')">&times;</button>
+    </div>
+
+    <form method="POST" action="{{ url_for('risk.report_posting', job_id=job.job_id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+      <div class="modal-body">
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+          Flagging this posting queues it for administrative safety review and helps safeguard other university students from fraudulent recruitment practices.
+        </p>
+
+        <div class="form-group">
+          <label for="report_reason" class="form-label">Primary Warning Reason</label>
+          <select id="report_reason" name="reason" class="form-control" required>
+            <option value="Demands upfront payment or equipment fees">Demands upfront payment or equipment fees</option>
+            <option value="Fake check cashing or money transfer scheme">Fake check cashing or money transfer scheme</option>
+            <option value="Requires off-platform chat (WhatsApp/Telegram only)">Requires off-platform chat (WhatsApp/Telegram only)</option>
+            <option value="Demands sensitive data (SSN, passport, banking)">Demands sensitive data (SSN, passport, banking)</option>
+            <option value="Unrealistic compensation / instant hire without interview">Unrealistic compensation / instant hire without interview</option>
+            <option value="Impersonating a known company">Impersonating a known company</option>
+            <option value="Other suspicious recruitment behavior">Other suspicious recruitment behavior</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="report_details" class="form-label">Additional Details / Evidence (Optional)</label>
+          <textarea id="report_details" name="details" class="form-control" rows="4" placeholder="Describe any suspicious interactions, email addresses, or phone numbers involved..."></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('report-posting-modal')">Cancel</button>
+        <button type="submit" class="btn btn-danger">Submit Safety Report</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

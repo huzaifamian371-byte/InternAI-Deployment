@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}Job Risk & Scam Analyzer — InternAI{% endblock %}
+
+{% block header_title %}Job Risk & Scam Detector{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+  <h1 style="font-size: 1.75rem; font-weight: 800; color: var(--secondary); letter-spacing: -0.02em;">
+    Job Risk & Scam Detector 🛡️
+  </h1>
+  <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem;">
+    Protect yourself from employment fraud, check-cashing schemes, upfront fee scams, and identity theft before applying.
+  </p>
+</div>
+
+<!-- Standalone Risk Scanner Card -->
+<div class="card" style="margin-bottom: 2rem;">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Paste Posting to Check for Red Flags</h2>
+      <p class="card-subtitle">AI & deterministic pattern scanners analyze communication, compensation, and payment terms</p>
+    </div>
+    <!-- Quick Demo Presets -->
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+      <button type="button" class="btn btn-outline-danger btn-sm" id="btn-load-scam-1">
+        ⚠️ Sample Scam: Fake Check / Telegram
+      </button>
+      <button type="button" class="btn btn-outline-danger btn-sm" id="btn-load-scam-2">
+        ⚠️ Sample Scam: Upfront Training Fee
+      </button>
+      <button type="button" class="btn btn-secondary btn-sm" id="btn-load-legit">
+        ✓ Sample Legitimate Posting
+      </button>
+    </div>
+  </div>
+
+  <form method="POST" action="{{ url_for('risk.check_standalone') }}" id="risk-scanner-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+    <div class="form-group">
+      <label for="job_text" class="form-label">Job Posting or Recruiter Message Text</label>
+      <textarea 
+        id="job_text" 
+        name="job_text" 
+        class="form-control" 
+        rows="8" 
+        placeholder="Paste job posting text or recruiter message to analyze for deceptive patterns, financial red flags, or off-platform communication..."
+        style="font-family: inherit; font-size: 0.9rem; line-height: 1.5; min-height: 180px;"
+        required
+      ></textarea>
+      <div class="form-text">
+        🔒 InternAI treats all pasted text as untrusted and tests for 7 core scam categories.
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+      <button type="submit" class="btn btn-primary btn-lg" style="min-width: 240px;">
+        🛡️ Run Fraud & Risk Scan
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- Past Analyzed Postings Risk Overview -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Saved Postings Safety Status ({{ jobs|length }})</h2>
+      <p class="card-subtitle">Risk assessments for your saved internship opportunities</p>
+    </div>
+  </div>
+
+  {% if jobs %}
+  <div style="overflow-x: auto;">
+    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+      <thead>
+        <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-muted);">
+          <th style="padding: 0.85rem 0.75rem;">Role & Company</th>
+          <th style="padding: 0.85rem 0.75rem;">Location</th>
+          <th style="padding: 0.85rem 0.75rem;">Assessed Risk Level</th>
+          <th style="padding: 0.85rem 0.75rem;">Risk Summary</th>
+          <th style="padding: 0.85rem 0.75rem; text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for j in jobs %}
+        <tr style="border-bottom: 1px solid var(--border-color);">
+          <td style="padding: 0.85rem 0.75rem;">
+            <div style="font-weight: 700; color: var(--secondary);">{{ j.title }}</div>
+            <div style="font-size: 0.82rem; color: var(--text-muted);">🏢 {{ j.company }}</div>
+          </td>
+          <td style="padding: 0.85rem 0.75rem;">{{ j.location or 'Not specified' }}</td>
+          <td style="padding: 0.85rem 0.75rem;">
+            {% if j.risk_level == 'High' %}
+              <span class="badge" style="background-color: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-border); font-weight: 700;">
+                ⚠️ High Risk ({{ j.risk_score }}/10)
+              </span>
+            {% elif j.risk_level == 'Medium' %}
+              <span class="badge" style="background-color: var(--warning-bg); color: var(--warning); border: 1px solid var(--warning-border); font-weight: 700;">
+                ⚡ Medium Risk ({{ j.risk_score }}/10)
+              </span>
+            {% elif j.risk_level == 'Low' %}
+              <span class="badge" style="background-color: var(--info-bg); color: var(--info); border: 1px solid var(--info-border);">
+                ℹ️ Low Risk ({{ j.risk_score }}/10)
+              </span>
+            {% else %}
+              <span class="badge badge-advanced">
+                ✓ Safe / Verified
+              </span>
+            {% endif %}
+          </td>
+          <td style="padding: 0.85rem 0.75rem; font-size: 0.82rem; color: var(--text-muted); max-width: 320px;">
+            {{ (j.risk_summary[:85] ~ '...') if j.risk_summary else 'No risks detected.' }}
+          </td>
+          <td style="padding: 0.85rem 0.75rem; text-align: right;">
+            <a href="{{ url_for('risk.view_job_risk', job_id=j.job_id) }}" class="btn btn-secondary btn-sm">
+              View Safety Report →
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align: center; padding: 2.5rem 1rem; color: var(--text-muted);">
+    <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🛡️</div>
+    <div style="font-weight: 600; color: var(--secondary); font-size: 1rem;">No postings analyzed yet</div>
+    <p style="font-size: 0.88rem; margin-top: 0.25rem;">
+      Paste any suspicious job description above to test our real-time scam risk analyzer.
+    </p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById("risk-scanner-form").addEventListener("submit", function() {
+    showSpinner("Scanning job posting for scam patterns, fraud signals, and identity risks...");
+  });
+
+  // Sample Scam 1: Telegram + Fake Check / Equipment Purchase
+  const SAMPLE_SCAM_1 = `Data Entry & Software Assistant Intern — Immediate Start!
+Global Tech Solutions LLC (Confidential Employer)
+Compensation: $85 / hour (Guaranteed weekly payout)
+Location: Remote (Work from Home)
+
+We are urgently seeking 5 university students to start immediately today! No interview required!
+You will receive your first weekly paycheck of $3,400 in advance.
+
+Responsibilities:
+- Process data spreadsheets and software reports.
+- We will send you a company check for $4,500 to deposit into your personal bank account. You must immediately cash this check and wire transfer $3,800 via Western Union or Bitcoin to our certified home office equipment vendor to receive your company Apple MacBook Pro.
+- To confirm your placement, send your Social Security Number, bank account details, and a clear photo of your passport to recruiter.globalsolutions@gmail.com.
+- Download Telegram and contact our hiring manager @GlobalRecruiterAlex immediately for setup instructions!
+`;
+
+  // Sample Scam 2: Upfront Training Fee + WhatsApp Only
+  const SAMPLE_SCAM_2 = `Python Developer Intern — Remote
+Apex Innovations
+Pay: $45/hr
+
+We are hiring interns for remote Python and web development.
+Requirements:
+- Basic Python knowledge.
+- Candidates must pay an upfront $250 registration and security background check fee before the interview process begins. The fee will be refunded after 90 days.
+- Interviews are conducted strictly on WhatsApp only! Do not message us on LinkedIn or our corporate site. Message our HR supervisor on WhatsApp at +1-555-019-2834.
+`;
+
+  // Sample Legitimate Tech Posting
+  const SAMPLE_LEGIT = `Software Engineer Intern — Summer 2026
+Stripe — Seattle, WA (Hybrid)
+Compensation: $56 / hour + housing assistance
+Duration: 12-week summer program
+
+About Stripe:
+Stripe builds economic infrastructure for the internet. As an engineering intern, you will work on production systems with dedicated mentorship and code reviews.
+
+Requirements:
+- Currently enrolled in a Bachelor's or Master's program in Computer Science or related engineering discipline.
+- Experience with at least one programming language (Ruby, Java, Go, Python, or JavaScript).
+- Solid grasp of data structures and object-oriented design.
+- Applications must be submitted through our official careers portal at stripe.com/jobs. We will never ask for payment or sensitive banking info during recruitment.
+`;
+
+  document.getElementById("btn-load-scam-1").addEventListener("click", function() {
+    document.getElementById("job_text").value = SAMPLE_SCAM_1;
+    showToast("Loaded Sample Scam 1 (Fake Check + Telegram + $85/hr)", "warning");
+  });
+
+  document.getElementById("btn-load-scam-2").addEventListener("click", function() {
+    document.getElementById("job_text").value = SAMPLE_SCAM_2;
+    showToast("Loaded Sample Scam 2 (Upfront Fee + WhatsApp)", "warning");
+  });
+
+  document.getElementById("btn-load-legit").addEventListener("click", function() {
+    document.getElementById("job_text").value = SAMPLE_LEGIT;
+    showToast("Loaded Legitimate Tech Job Sample", "info");
+  });
+</script>
+{% endblock %}
