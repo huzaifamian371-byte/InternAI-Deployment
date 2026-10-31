@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {% if is_dashboard %}Dashboard — InternAI{% else %}InternAI — AI-Powered Internship Assistant{% endif %}
+{% endblock %}
+
+{% block header_title %}
+  Student Dashboard
+{% endblock %}
+
+{% block public_content %}
+<!-- Public Landing Page -->
+<div style="background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); padding: 5rem 1.5rem 4rem; text-align: center;">
+  <div style="max-width: 850px; margin: 0 auto;">
+    <div style="display: inline-flex; align-items: center; gap: 0.5rem; background-color: var(--primary-light); color: var(--primary); padding: 0.35rem 1rem; border-radius: var(--radius-full); font-size: 0.85rem; font-weight: 600; margin-bottom: 1.5rem;">
+      ✨ Production-Ready AI Internship Copilot for University Students
+    </div>
+    <h1 style="font-size: 3.25rem; font-weight: 800; line-height: 1.15; color: var(--secondary); letter-spacing: -0.03em; margin-bottom: 1.5rem;">
+      Land Your Dream Internship with <span style="color: var(--primary);">AI Precision</span>
+    </h1>
+    <p style="font-size: 1.25rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 2.5rem; max-width: 720px; margin-left: auto; margin-right: auto;">
+      InternAI breaks down job requirements, pinpoints missing skills, builds custom learning roadmaps, detects suspicious job scams, polishes your applications, and prepares you with mock interviews.
+    </p>
+    <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+      <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">
+        Create Student Profile
+      </a>
+      <a href="{{ url_for('auth.login') }}" class="btn btn-secondary btn-lg">
+        Sign In to Portal
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Key Features Showcase -->
+<div style="max-width: 1200px; margin: 0 auto; padding: 4rem 1.5rem;">
+  <div style="text-align: center; margin-bottom: 3.5rem;">
+    <h2 style="font-size: 2rem; font-weight: 700; color: var(--secondary);">Complete End-to-End Internship Workflow</h2>
+    <p style="color: var(--text-muted); margin-top: 0.5rem;">From discovering a posting to passing technical interviews and tracking offers.</p>
+  </div>
+
+  <div class="grid-3">
+    <div class="card">
+      <div class="stat-icon primary" style="margin-bottom: 1rem;">🔍</div>
+      <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.5rem;">AI Job Analyzer</h3>
+      <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5;">
+        Paste raw job postings to extract structured role summaries, required technologies, experience levels, and work arrangements in seconds.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="stat-icon warning" style="margin-bottom: 1rem;">🛡️</div>
+      <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.5rem;">Job Risk & Scam Detection</h3>
+      <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5;">
+        Protects students by highlighting red flags like upfront fees, personal info requests, WhatsApp-only communications, and suspicious company patterns.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="stat-icon success" style="margin-bottom: 1rem;">🎯</div>
+      <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.5rem;">Explainable Skill Matching</h3>
+      <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5;">
+        Semantic matching between your profile and job requirements with transparent, explainable scoring and critical gap breakdowns.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="stat-icon info" style="margin-bottom: 1rem;">🗺️</div>
+      <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.5rem;">Dynamic Learning Roadmaps</h3>
+      <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5;">
+        Generates realistic week-by-week timelines with practice project ideas to bridge your exact missing skills before application deadlines.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="stat-icon primary" style="margin-bottom: 1rem;">🎙️</div>
+      <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.5rem;">Turn-by-Turn Mock Interviews</h3>
+      <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5;">
+        Interactive technical and behavioral interview practice with immediate feedback, scores, strengths, and sample answers.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="stat-icon success" style="margin-bottom: 1rem;">📋</div>
+      <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.5rem;">Kanban Tracker</h3>
+      <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5;">
+        Track applications from Saved to Applied, Interview, and Offer with deadline reminders and draggable pipeline cards.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Authenticated Student Dashboard -->
+<div style="margin-bottom: 2rem;">
+  <h1 style="font-size: 1.75rem; font-weight: 800; color: var(--secondary); letter-spacing: -0.02em;">
+    Welcome back, {{ user.full_name }}! 👋
+  </h1>
+  <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem;">
+    Here is an overview of your internship preparation pipeline and profile readiness.
+  </p>
+</div>
+
+<!-- Profile Completeness Meter Card -->
+<div class="card" style="background: linear-gradient(135deg, #ffffff 0%, var(--primary-light) 100%); border-color: var(--primary-border);">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div style="flex: 1; min-width: 260px;">
+      <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+        <span style="font-weight: 700; font-size: 1.05rem; color: var(--secondary);">Profile Readiness</span>
+        <span class="badge {% if completeness >= 80 %}badge-advanced{% elif completeness >= 50 %}badge-intermediate{% else %}badge-beginner{% endif %}">
+          {{ completeness }}% Completed
+        </span>
+      </div>
+      <div class="progress-bar-container" style="background-color: rgba(255, 255, 255, 0.8);">
+        <div class="progress-bar-fill" style="width: {{ completeness }}%;"></div>
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">
+        {% if completeness < 100 %}
+          Add your university details, at least 5 skills, and 2 portfolio projects to maximize match accuracy.
+        {% else %}
+          Great job! Your student profile is fully optimized for AI matching.
+        {% endif %}
+      </p>
+    </div>
+    <div>
+      <a href="{{ url_for('profile.index') }}" class="btn btn-primary">
+        Manage Profile & Skills →
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Statistics Cards Grid -->
+<div class="grid-4" style="margin-bottom: 2rem;">
+  <div class="stat-card">
+    <div class="stat-icon primary">⚡</div>
+    <div class="stat-content">
+      <span class="stat-number">{{ skills_count }}</span>
+      <span class="stat-label">Profile Skills</span>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon success">💻</div>
+    <div class="stat-content">
+      <span class="stat-number">{{ projects_count }}</span>
+      <span class="stat-label">Portfolio Projects</span>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon warning">🔍</div>
+    <div class="stat-content">
+      <span class="stat-number">{{ recent_jobs|length }}</span>
+      <span class="stat-label">Analyzed Postings</span>
+    </div>
+  </div>
+
+  <a href="{{ url_for('tracker.index') }}" class="stat-card" style="text-decoration: none; color: inherit; cursor: pointer;">
+    <div class="stat-icon info">📋</div>
+    <div class="stat-content">
+      <span class="stat-number">{{ apps_count }}</span>
+      <span class="stat-label">Applications Tracked</span>
+    </div>
+  </a>
+</div>
+
+<!-- Quick Action Shortcuts -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Quick Actions & Workflows</h2>
+      <p class="card-subtitle">Choose what you want to work on next</p>
+    </div>
+  </div>
+
+  <div class="grid-4">
+    <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">📝</div>
+        <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--secondary);">Analyze Job Posting</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.35rem; line-height: 1.45;">
+          Paste any job description to extract structured requirements and run fraud & risk checks.
+        </p>
+      </div>
+      <div style="margin-top: 1rem;">
+        <a href="{{ url_for('analyzer.index') }}" class="btn btn-primary btn-sm" style="width: 100%;">
+          Analyze Posting ➔
+        </a>
+      </div>
+    </div>
+
+    <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🎙️</div>
+        <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--secondary);">AI Mock Interview</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.35rem; line-height: 1.45;">
+          Practice interactive technical and behavioral questions with instant 1–10 scoring & coaching.
+        </p>
+      </div>
+      <div style="margin-top: 1rem;">
+        <a href="{{ url_for('interview.index') }}" class="btn btn-outline-primary btn-sm" style="width: 100%;">
+          Start Interview ➔
+        </a>
+      </div>
+    </div>
+
+    <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">📋</div>
+        <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--secondary);">Kanban Tracker</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.35rem; line-height: 1.45;">
+          Organize your applications from Saved to Offer with drag-and-drop & deadline alerts.
+        </p>
+      </div>
+      <div style="margin-top: 1rem;">
+        <a href="{{ url_for('tracker.index') }}" class="btn btn-secondary btn-sm" style="width: 100%;">
+          Open Pipeline ➔
+        </a>
+      </div>
+    </div>
+
+    <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🎯</div>
+        <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--secondary);">Skill Matcher</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.35rem; line-height: 1.45;">
+          Evaluate semantic fit against target jobs and discover critical gaps to strengthen.
+        </p>
+      </div>
+      <div style="margin-top: 1rem;">
+        <a href="{{ url_for('matcher.index') }}" class="btn btn-secondary btn-sm" style="width: 100%;">
+          Check Fit ➔
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Analyzed Postings -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Recent Job Postings & Match Rates</h2>
+      <p class="card-subtitle">Your latest analyzed opportunities</p>
+    </div>
+    <a href="{{ url_for('analyzer.index') }}" class="btn btn-secondary btn-sm">
+      View All Jobs
+    </a>
+  </div>
+
+  {% if recent_jobs %}
+  <div style="overflow-x: auto;">
+    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+      <thead>
+        <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-muted);">
+          <th style="padding: 0.75rem 0.5rem;">Job Title</th>
+          <th style="padding: 0.75rem 0.5rem;">Company</th>
+          <th style="padding: 0.75rem 0.5rem;">Work Type</th>
+          <th style="padding: 0.75rem 0.5rem;">Match Score</th>
+          <th style="padding: 0.75rem 0.5rem;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for job in recent_jobs %}
+        <tr style="border-bottom: 1px solid var(--border-color);">
+          <td style="padding: 0.85rem 0.5rem; font-weight: 600; color: var(--secondary);">
+            <a href="{{ url_for('analyzer.view_job', job_id=job.job_id) }}">
+              {{ job.title }}
+            </a>
+          </td>
+          <td style="padding: 0.85rem 0.5rem;">{{ job.company or 'Not specified' }}</td>
+          <td style="padding: 0.85rem 0.5rem; text-transform: capitalize;">{{ job.work_type }}</td>
+          <td style="padding: 0.85rem 0.5rem;">
+            {% if job.match_percentage is not none %}
+              <span class="badge {% if job.match_percentage >= 75 %}badge-advanced{% elif job.match_percentage >= 50 %}badge-intermediate{% else %}badge-beginner{% endif %}">
+                {{ job.match_percentage }}%
+              </span>
+            {% else %}
+              <span class="badge badge-gray">Not Matched</span>
+            {% endif %}
+          </td>
+          <td style="padding: 0.85rem 0.5rem;">
+            <a href="{{ url_for('matcher.view_match', job_id=job.job_id) }}" class="btn btn-primary btn-sm">
+              Match Details →
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align: center; padding: 2.5rem 1rem; color: var(--text-muted);">
+    <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">📋</div>
+    <div style="font-weight: 600; color: var(--secondary); font-size: 1rem;">No Job Postings Analyzed Yet</div>
+    <p style="font-size: 0.88rem; margin-top: 0.25rem;">
+      When you analyze postings in Phase 2, your match scores and scam risk assessments will appear here.
+    </p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
