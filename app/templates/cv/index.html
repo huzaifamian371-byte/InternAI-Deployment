@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}AI CV Analyzer — InternAI{% endblock %}
+
+{% block header_title %}AI CV & Resume Analyzer{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 1.5rem;">
+  <h1 style="font-size: 1.75rem; font-weight: 800; color: var(--secondary);">
+    AI CV & Resume Analyzer
+  </h1>
+  <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem;">
+    Upload your PDF or DOCX resume to extract technical credentials, receive calibrated readiness scores, and optimize bullet points with the Google X-Y-Z formula.
+  </p>
+</div>
+
+<div class="grid-2">
+  <!-- Left Column: Upload Resume Document -->
+  <div>
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <div class="card-header">
+        <h2 class="card-title">📄 Upload Resume File</h2>
+      </div>
+
+      <form action="{{ url_for('cv.upload_cv') }}" method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <!-- Target Job Context (Optional) -->
+        <div class="form-group">
+          <label class="form-label" for="job_id">Evaluate Against Target Job (Recommended)</label>
+          <select name="job_id" id="job_id" class="form-control">
+            <option value="">-- General Software Engineering Internship Readiness --</option>
+            {% for j in available_jobs %}
+              <option value="{{ j.job_id }}">{{ j.title }} — {{ j.company }}</option>
+            {% endfor %}
+          </select>
+          <small style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.25rem; display: block;">
+            Selecting a saved job allows the AI to tailor relevance scoring and bullet improvements to that specific company's requirements.
+          </small>
+        </div>
+
+        <!-- File Upload Zone -->
+        <div class="form-group">
+          <label class="form-label">Resume Document (.PDF or .DOCX, Max 5MB)</label>
+          <div style="border: 2px dashed var(--border-color); border-radius: var(--radius-md); padding: 2rem 1.5rem; text-align: center; background-color: var(--bg-subtle); transition: border-color 0.2s;">
+            <div style="font-size: 2.25rem; margin-bottom: 0.5rem;">📂</div>
+            <p style="font-weight: 600; color: var(--secondary); margin-bottom: 0.25rem;">
+              Choose a file or drag & drop here
+            </p>
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem;">
+              Supported formats: Adobe PDF (.pdf) or Microsoft Word (.docx)
+            </p>
+            <input type="file" name="cv_file" id="cv_file" accept=".pdf,.docx" required style="font-size: 0.9rem;">
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.85rem;">
+          ✨ Upload & Analyze Resume
+        </button>
+      </form>
+    </div>
+
+    <!-- Active Resume Status Card -->
+    {% if profile and profile.cv_filename %}
+      <div class="card" style="border-left: 4px solid var(--primary); margin-bottom: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 0.78rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted);">
+              Current Active Resume
+            </div>
+            <div style="font-weight: 700; color: var(--secondary); font-size: 1rem; margin-top: 0.2rem;">
+              {{ profile.cv_filename }}
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.15rem;">
+              Uploaded: {{ profile.cv_uploaded_at }}
+            </div>
+          </div>
+          <span class="badge badge-success">Active On File</span>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Right Column: Or Paste Text Directly -->
+  <div>
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <div class="card-header">
+        <h2 class="card-title">📝 Or Paste Resume Text Directly</h2>
+      </div>
+
+      <form action="{{ url_for('cv.paste_cv') }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="form-group">
+          <label class="form-label" for="paste_job_id">Evaluate Against Target Job (Optional)</label>
+          <select name="job_id" id="paste_job_id" class="form-control">
+            <option value="">-- General Software Engineering Internship Readiness --</option>
+            {% for j in available_jobs %}
+              <option value="{{ j.job_id }}">{{ j.title }} — {{ j.company }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="cv_text">Resume Raw Text</label>
+          <textarea
+            name="cv_text"
+            id="cv_text"
+            class="form-control"
+            rows="10"
+            placeholder="Paste your education, skills, experience, and project bullets directly here..."
+            required
+            style="font-family: monospace; font-size: 0.85rem;"
+          ></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-secondary" style="width: 100%; justify-content: center; padding: 0.85rem;">
+          ⚡ Evaluate Pasted Text
+        </button>
+      </form>
+    </div>
+
+    <!-- Quick Tips Card -->
+    <div class="card" style="background-color: var(--bg-subtle);">
+      <h3 style="font-size: 1rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.6rem;">
+        💡 High-Score Resume Strategies
+      </h3>
+      <ul style="padding-left: 1.25rem; font-size: 0.86rem; color: var(--text-main); display: flex; flex-direction: column; gap: 0.5rem; line-height: 1.45;">
+        <li><strong>Use the Google X-Y-Z formula:</strong> "Accomplished [X] as measured by [Y], by doing [Z]".</li>
+        <li><strong>Lead with strong action verbs:</strong> "Architected", "Engineered", "Optimized", rather than "Assisted" or "Worked on".</li>
+        <li><strong>Quantify outcomes:</strong> Mention latency reductions, unit test coverage percentages, or user numbers.</li>
+        <li><strong>Clean skill categorization:</strong> Group technical competencies by languages, databases, web, and tools.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Past CV Analyses Table -->
+<div class="card" style="margin-top: 1.5rem;">
+  <div class="card-header">
+    <h2 class="card-title">🕒 Evaluation History ({{ analyses|length }})</h2>
+  </div>
+
+  {% if analyses %}
+    <div style="overflow-x: auto;">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Evaluated On</th>
+            <th>Target Job</th>
+            <th>Overall Score</th>
+            <th>Score Breakdown</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in analyses %}
+            <tr>
+              <td>
+                <strong>{{ a.created_at }}</strong>
+              </td>
+              <td>
+                {% if a.job_title %}
+                  <span style="font-weight: 600; color: var(--secondary);">{{ a.job_title }}</span>
+                  <div style="font-size: 0.8rem; color: var(--text-muted);">{{ a.company }}</div>
+                {% else %}
+                  <span class="badge badge-gray">General Readiness</span>
+                {% endif %}
+              </td>
+              <td>
+                {% set sc = a.cv_score or 0 %}
+                <span class="badge {% if sc >= 80 %}badge-success{% elif sc >= 60 %}badge-warning{% else %}badge-danger{% endif %}" style="font-size: 0.9rem; font-weight: 700;">
+                  {{ sc }} / 100
+                </span>
+              </td>
+              <td style="font-size: 0.82rem; color: var(--text-muted);">
+                {% set b = a.breakdown %}
+                Clarity: {{ b.get('clarity', 0) }}/25 | Rel: {{ b.get('relevance', 0) }}/25 | Imp: {{ b.get('impact', 0) }}/25 | Form: {{ b.get('formatting_readability', 0) }}/25
+              </td>
+              <td style="text-align: right;">
+                <div style="display: inline-flex; gap: 0.5rem; align-items: center;">
+                  <a href="{{ url_for('cv.view_analysis', analysis_id=a.cv_analysis_id) }}" class="btn btn-secondary btn-sm">
+                    View Report →
+                  </a>
+                  <form action="{{ url_for('cv.delete_analysis', analysis_id=a.cv_analysis_id) }}" method="POST" onsubmit="return confirm('Delete this resume evaluation report?');" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete Evaluation">
+                      ✕
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">📄</div>
+      <p class="empty-text">No resume evaluations yet. Upload your PDF or DOCX file above to get your first AI score and bullet feedback.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,367 @@
+{% extends "base.html" %}
+
+{% block title %}Resume Analysis Report — InternAI{% endblock %}
+
+{% block header_title %}AI Resume Evaluation Report{% endblock %}
+
+{% block content %}
+<!-- Back Breadcrumb -->
+<div style="margin-bottom: 1.25rem;">
+  <a href="{{ url_for('cv.index') }}" style="color: var(--text-muted); font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+    ← Back to Resume Analyzer
+  </a>
+</div>
+
+<!-- Score Hero Card -->
+<div class="card" style="border-left: 6px solid var(--primary); margin-bottom: 1.5rem;">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1.5rem;">
+    <div style="flex: 1; min-width: 280px;">
+      <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+        {% if analysis.job_title %}
+          <span class="badge badge-primary">Targeting: {{ analysis.job_title }} ({{ analysis.company }})</span>
+        {% else %}
+          <span class="badge badge-gray">General Software Engineering Readiness</span>
+        {% endif %}
+        <span class="badge badge-gray">Evaluated on {{ analysis.created_at }}</span>
+      </div>
+      <h1 style="font-size: 1.75rem; font-weight: 800; color: var(--secondary);">
+        {% if extracted_data.candidate_name %}
+          {{ extracted_data.candidate_name }}'s Resume Evaluation
+        {% else %}
+          Resume Readiness Assessment
+        {% endif %}
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.92rem; margin-top: 0.4rem; line-height: 1.5;">
+        {{ extracted_data.get('summary_verdict', 'Comprehensive analysis of technical competencies, quantifiable metrics, and bullet impact.') }}
+      </p>
+
+      {% if extracted_data.contact_email or extracted_data.contact_phone %}
+        <div style="margin-top: 0.75rem; display: flex; gap: 1rem; font-size: 0.85rem; color: var(--text-main);">
+          {% if extracted_data.contact_email %}
+            <span>✉️ <strong>{{ extracted_data.contact_email }}</strong></span>
+          {% endif %}
+          {% if extracted_data.contact_phone %}
+            <span>📞 <strong>{{ extracted_data.contact_phone }}</strong></span>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Overall Score Gauge -->
+    <div style="text-align: center; background-color: var(--bg-subtle); padding: 1.25rem 1.75rem; border-radius: var(--radius-lg); border: 1px solid var(--border-color); min-width: 220px;">
+      <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.25rem;">
+        Composite Resume Score
+      </div>
+      {% set sc = analysis.cv_score or 0 %}
+      <div style="font-size: 2.75rem; font-weight: 900; line-height: 1; color: {% if sc >= 80 %}var(--success){% elif sc >= 60 %}var(--warning){% else %}var(--danger){% endif %};">
+        {{ sc }}<span style="font-size: 1.25rem; font-weight: 600; color: var(--text-muted);">/100</span>
+      </div>
+      <div style="font-size: 0.82rem; font-weight: 600; color: var(--text-main); margin-top: 0.4rem;">
+        {% if sc >= 80 %}
+          🚀 Highly Competitive Resume
+        {% elif sc >= 60 %}
+          ⚖️ Strong Base, Needs Refinement
+        {% else %}
+          🛠️ Substantial Polishing Needed
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- 4-Dimension Calibrated Score Breakdown -->
+  <hr style="margin: 1.25rem 0; border: none; border-top: 1px solid var(--border-color);">
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+    <!-- Clarity -->
+    <div style="background-color: var(--bg-main); padding: 0.85rem 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+        <span style="font-size: 0.82rem; font-weight: 700; color: var(--secondary);">📖 Clarity & Layout</span>
+        <span style="font-weight: 800; font-size: 0.9rem; color: var(--primary);">{{ score_breakdown.get('clarity', 0) }} / 25</span>
+      </div>
+      <div class="progress-bar-container" style="margin: 0; height: 6px;">
+        <div class="progress-bar-fill" style="width: {{ (score_breakdown.get('clarity', 0) / 25) * 100 }}%;"></div>
+      </div>
+      <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem;">Readability & clean formatting</div>
+    </div>
+
+    <!-- Relevance -->
+    <div style="background-color: var(--bg-main); padding: 0.85rem 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+        <span style="font-size: 0.82rem; font-weight: 700; color: var(--secondary);">🎯 Role Relevance</span>
+        <span style="font-weight: 800; font-size: 0.9rem; color: var(--primary);">{{ score_breakdown.get('relevance', 0) }} / 25</span>
+      </div>
+      <div class="progress-bar-container" style="margin: 0; height: 6px;">
+        <div class="progress-bar-fill" style="width: {{ (score_breakdown.get('relevance', 0) / 25) * 100 }}%;"></div>
+      </div>
+      <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem;">Match to internship expectations</div>
+    </div>
+
+    <!-- Impact -->
+    <div style="background-color: var(--bg-main); padding: 0.85rem 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+        <span style="font-size: 0.82rem; font-weight: 700; color: var(--secondary);">💥 Measurable Impact</span>
+        <span style="font-weight: 800; font-size: 0.9rem; color: var(--primary);">{{ score_breakdown.get('impact', 0) }} / 25</span>
+      </div>
+      <div class="progress-bar-container" style="margin: 0; height: 6px;">
+        <div class="progress-bar-fill" style="width: {{ (score_breakdown.get('impact', 0) / 25) * 100 }}%;"></div>
+      </div>
+      <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem;">Quantified metrics & action verbs</div>
+    </div>
+
+    <!-- Formatting & Readability -->
+    <div style="background-color: var(--bg-main); padding: 0.85rem 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+        <span style="font-size: 0.82rem; font-weight: 700; color: var(--secondary);">📐 Structure Quality</span>
+        <span style="font-weight: 800; font-size: 0.9rem; color: var(--primary);">{{ score_breakdown.get('formatting_readability', 0) }} / 25</span>
+      </div>
+      <div class="progress-bar-container" style="margin: 0; height: 6px;">
+        <div class="progress-bar-fill" style="width: {{ (score_breakdown.get('formatting_readability', 0) / 25) * 100 }}%;"></div>
+      </div>
+      <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem;">Conciseness & section hierarchy</div>
+    </div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- Left Column: Bullet Rewrites & Weak Sections -->
+  <div>
+    <!-- Google X-Y-Z Bullet Point Rewrites -->
+    <div class="card" style="margin-bottom: 1.5rem; border-left: 4px solid var(--primary);">
+      <div class="card-header">
+        <h2 class="card-title">✨ Recommended Bullet Point Rewrites (Google X-Y-Z Formula)</h2>
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+        Upgrade passive bullets into impactful statements: <em>"Accomplished [X] as measured by [Y], by doing [Z]"</em>.
+      </p>
+
+      {% set rewrites = suggestions.get('bullet_rewrites', []) %}
+      {% if rewrites %}
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+          {% for r in rewrites %}
+            <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden;">
+              <!-- Original Bullet -->
+              <div style="background-color: #fff1f2; padding: 0.65rem 0.85rem; border-bottom: 1px solid #fecdd3; font-size: 0.85rem;">
+                <span style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: #be123c; display: block; margin-bottom: 0.15rem;">
+                  ❌ Original / Before
+                </span>
+                <span style="color: #881337; font-family: monospace;">{{ r.original_bullet }}</span>
+              </div>
+              <!-- Rewritten Bullet -->
+              <div style="background-color: #ecfdf5; padding: 0.75rem 0.85rem; font-size: 0.88rem; border-bottom: 1px solid #a7f3d0;">
+                <span style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: #047857; display: block; margin-bottom: 0.15rem;">
+                  ✅ High-Impact Rewrite (X-Y-Z)
+                </span>
+                <strong style="color: #064e3b; font-family: monospace;">{{ r.rewritten_bullet }}</strong>
+              </div>
+              <!-- Why It's Stronger -->
+              <div style="background-color: var(--bg-subtle); padding: 0.5rem 0.85rem; font-size: 0.8rem; color: var(--text-muted);">
+                💡 <strong>Why:</strong> {{ r.improvement_reason }}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p style="font-size: 0.88rem; color: var(--text-muted);">No weak bullet rewrites flagged.</p>
+      {% endif %}
+    </div>
+
+    <!-- Weak / Missing Sections -->
+    <div class="card" style="margin-bottom: 1.5rem; border-left: 4px solid var(--warning);">
+      <div class="card-header">
+        <h2 class="card-title">⚠️ Areas to Strengthen</h2>
+      </div>
+
+      {% set weaks = suggestions.get('weak_or_missing_sections', []) %}
+      {% if weaks %}
+        <ul style="padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.65rem; font-size: 0.88rem; color: var(--text-main); line-height: 1.5;">
+          {% for w in weaks %}
+            <li>{{ w }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p style="font-size: 0.88rem; color: var(--success); font-weight: 600;">
+          All essential resume sections are well-represented!
+        </p>
+      {% endif %}
+    </div>
+
+    <!-- Highlighted Projects -->
+    {% set high_projs = suggestions.get('highlighted_projects', []) %}
+    {% if high_projs %}
+      <div class="card" style="margin-bottom: 1.5rem; border-left: 4px solid #10b981;">
+        <div class="card-header">
+          <h2 class="card-title">🌟 Top Projects to Spotlight in Applications</h2>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+          {% for hp in high_projs %}
+            <span class="badge badge-primary" style="font-size: 0.85rem; padding: 0.4rem 0.75rem;">
+              {{ hp }}
+            </span>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Right Column: Extracted Skills & Profile Sync -->
+  <div>
+    <!-- Extracted Skills with Import Capability -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 class="card-title">🛠️ Extracted Technical Skills</h2>
+        <button type="button" class="btn btn-outline-primary btn-sm" onclick="document.getElementById('import-skills-modal').style.display = 'flex';">
+          📥 Import Skills to Profile
+        </button>
+      </div>
+
+      <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem;">
+        Skills detected in your CV categorized by domain. Click 'Import Skills to Profile' to automatically synchronize them with your account.
+      </p>
+
+      {% set skills_dict = extracted_data.get('extracted_skills', {}) %}
+      {% if skills_dict %}
+        {% for category, slist in skills_dict.items() %}
+          {% if slist %}
+            <div style="margin-bottom: 0.85rem;">
+              <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.35rem;">
+                {{ category|replace('_', ' ') }}
+              </div>
+              <div style="display: flex; flex-wrap: wrap; gap: 0.35rem;">
+                {% for s in slist %}
+                  <span class="badge badge-gray" style="font-size: 0.8rem;">
+                    {{ s }}
+                  </span>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
+        {% endfor %}
+      {% else %}
+        <p style="font-size: 0.85rem; color: var(--text-muted);">No technical skills detected.</p>
+      {% endif %}
+    </div>
+
+    <!-- Extracted Education & Work Experience -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <div class="card-header">
+        <h2 class="card-title">🎓 Extracted Academic & Work Background</h2>
+      </div>
+
+      <!-- Education -->
+      <div style="margin-bottom: 1rem;">
+        <h3 style="font-size: 0.9rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.4rem;">Education</h3>
+        {% for edu in extracted_data.get('education', []) %}
+          <div style="background-color: var(--bg-subtle); padding: 0.65rem 0.85rem; border-radius: var(--radius-sm); margin-bottom: 0.5rem; font-size: 0.85rem;">
+            <strong>{{ edu.degree }}</strong> — {{ edu.institution }}
+            <div style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.15rem;">
+              Graduation: {{ edu.graduation_year or 'Expected 2026' }} {% if edu.gpa %}| GPA: {{ edu.gpa }}{% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <!-- Experience -->
+      {% set exps = extracted_data.get('experience', []) %}
+      {% if exps %}
+        <div>
+          <h3 style="font-size: 0.9rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.4rem;">Experience</h3>
+          {% for exp in exps %}
+            <div style="background-color: var(--bg-subtle); padding: 0.65rem 0.85rem; border-radius: var(--radius-sm); margin-bottom: 0.5rem; font-size: 0.85rem;">
+              <strong>{{ exp.role }}</strong> — {{ exp.company }}
+              <div style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.15rem;">
+                {{ exp.duration or 'Recent' }}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Quick Action: Application Assistant Bridge -->
+    <div class="card" style="background-color: #fafafa; border: 1px solid var(--border-color);">
+      <h3 style="font-size: 1rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.5rem;">
+        ✍️ Next Step: Application Assistant
+      </h3>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.45;">
+        Ready to apply? Use the Application Assistant to generate a tailored cover letter, cold outreach email, and likely interview questions grounded in this resume.
+      </p>
+      <a href="{{ url_for('assistant.generate_view', job_id=analysis.job_id) if analysis.job_id else url_for('assistant.generate_view') }}" class="btn btn-primary" style="width: 100%; justify-content: center;">
+        🚀 Draft Cover Letter & Prep Materials →
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================================
+     MODAL: Import Skills to Profile
+     ============================================================================ -->
+<div id="import-skills-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(15, 23, 42, 0.6); z-index: 1000; align-items: center; justify-content: center; padding: 1rem;">
+  <div class="card" style="max-width: 600px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; margin: 0; padding: 0;">
+    <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--secondary); margin: 0;">
+        📥 Import Extracted Skills to Profile
+      </h3>
+      <button type="button" onclick="document.getElementById('import-skills-modal').style.display='none';" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: var(--text-muted);">
+        ✕
+      </button>
+    </div>
+
+    <form action="{{ url_for('cv.import_skills', analysis_id=analysis.cv_analysis_id) }}" method="POST" style="display: flex; flex-direction: column; overflow: hidden;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div style="padding: 1.25rem 1.5rem; overflow-y: auto; flex: 1;">
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+          Select which skills from your resume you want to add to your student profile:
+        </p>
+
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+          <label class="form-label" for="default_prof">Default Proficiency for Imported Skills</label>
+          <select name="proficiency" id="default_prof" class="form-control">
+            <option value="Intermediate" selected>Intermediate (Competent / Hands-on experience)</option>
+            <option value="Beginner">Beginner (Basic familiarity / Coursework)</option>
+            <option value="Advanced">Advanced (Extensive project & production depth)</option>
+          </select>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+          <span style="font-size: 0.82rem; font-weight: 700; color: var(--secondary);">Extracted Skills</span>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="document.querySelectorAll('.skill-import-cb').forEach(cb => { if (!cb.disabled) cb.checked = true; });">
+            Select All New
+          </button>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 0.45rem; max-height: 280px; overflow-y: auto; padding-right: 0.25rem;">
+          {% for sk in all_extracted_skills %}
+            <label style="display: flex; align-items: center; gap: 0.65rem; padding: 0.5rem 0.65rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background-color: {% if sk.already_in_profile %}var(--bg-subtle){% else %}var(--bg-main){% endif %}; cursor: {% if sk.already_in_profile %}default{% else %}pointer{% endif %};">
+              <input
+                type="checkbox"
+                name="skills"
+                value="{{ sk.name }}"
+                class="skill-import-cb"
+                {% if sk.already_in_profile %}disabled checked{% else %}checked{% endif %}
+              >
+              <span style="font-size: 0.88rem; font-weight: 600; color: var(--secondary);">
+                {{ sk.name }}
+              </span>
+              <span class="badge badge-gray" style="font-size: 0.7rem; margin-left: auto;">
+                {{ sk.category }}
+              </span>
+              {% if sk.already_in_profile %}
+                <span class="badge badge-success" style="font-size: 0.7rem;">Already Added</span>
+              {% endif %}
+            </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div style="padding: 1rem 1.5rem; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 0.75rem; background-color: var(--bg-subtle);">
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('import-skills-modal').style.display='none';">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-primary">
+          Confirm & Import Skills
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
