@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}AI Mock Interview — InternAI{% endblock %}
+{% block header_title %}AI Mock Interview Lab{% endblock %}
+
+{% block content %}
+<div style="max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 2rem;">
+
+  <!-- Header Banner -->
+  <div style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%); color: #ffffff; padding: 2.5rem 2rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+    <div style="max-width: 800px;">
+      <div style="display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.15); padding: 0.35rem 0.85rem; border-radius: var(--radius-full); font-size: 0.85rem; margin-bottom: 1rem; backdrop-filter: blur(4px);">
+        <span>🎙️</span>
+        <span style="font-weight: 500;">Interactive AI Interview Simulator</span>
+      </div>
+      <h1 style="font-size: 2.1rem; font-weight: 700; margin-bottom: 0.75rem; letter-spacing: -0.02em;">
+        AI Mock Interview Coach
+      </h1>
+      <p style="font-size: 1.05rem; opacity: 0.9; line-height: 1.6; margin: 0;">
+        Experience realistic interview questions dynamically tailored to your dream internship. 
+        Answer one question at a time, receive instant coaching scores (1–10) with actionable feedback, and finish with a comprehensive readiness report.
+      </p>
+    </div>
+  </div>
+
+  <!-- Active / Resumable Sessions Alert (if any) -->
+  {% if active_sessions %}
+  <div style="background-color: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius-md); padding: 1.25rem 1.5rem;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span style="font-size: 1.5rem;">⏳</span>
+        <div>
+          <h3 style="font-size: 1rem; font-weight: 600; color: #92400e; margin-bottom: 0.2rem;">
+            You have an in-progress interview session
+          </h3>
+          <p style="font-size: 0.88rem; color: #b45309; margin: 0;">
+            Continue where you left off without losing your progress.
+          </p>
+        </div>
+      </div>
+      <div style="display: flex; gap: 0.75rem; align-items: center;">
+        {% for s in active_sessions %}
+        <a href="{{ url_for('interview.session_view', session_id=s.session_id) }}" class="btn btn-primary btn-sm">
+          Resume: {{ s.job_title or 'Interview' }} (Q{{ s.current_question_index }}/{{ s.total_questions }}) →
+        </a>
+        <form action="{{ url_for('interview.abandon_session', session_id=s.session_id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Abandon this session?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-secondary btn-sm" style="color: var(--danger);">Abandon</button>
+        </form>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Setup New Interview Form -->
+  <div class="card" style="padding: 2rem;">
+    <div style="margin-bottom: 1.75rem;">
+      <h2 style="font-size: 1.35rem; font-weight: 600; color: var(--secondary); margin-bottom: 0.4rem;">
+        Start a New Mock Interview
+      </h2>
+      <p style="color: var(--text-muted); font-size: 0.92rem; margin: 0;">
+        Choose a target role from your analyzed job descriptions or enter custom job details.
+      </p>
+    </div>
+
+    <form action="{{ url_for('interview.start') }}" method="POST" id="start-interview-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+        
+        <!-- Job Selection -->
+        <div class="form-group">
+          <label class="form-label" for="job_id">
+            <strong>Target Internship / Position</strong>
+          </label>
+          <select name="job_id" id="job_id" class="form-control" onchange="toggleCustomJobFields(this.value)">
+            {% if jobs %}
+              <option value="">-- Select an Analyzed Job --</option>
+              {% for j in jobs %}
+                <option value="{{ j.job_id }}">{{ j.title }} at {{ j.company }} ({{ j.work_type|capitalize }})</option>
+              {% endfor %}
+              <option value="custom">+ Enter Custom Role / Job Description</option>
+            {% else %}
+              <option value="custom" selected>Custom Position (No analyzed jobs found)</option>
+            {% endif %}
+          </select>
+          <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.35rem; display: block;">
+            The questions will be tailored to the company's tech stack and your profile.
+          </span>
+        </div>
+
+        <!-- Interview Type -->
+        <div class="form-group">
+          <label class="form-label"><strong>Interview Focus Type</strong></label>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem;">
+            <label style="border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.75rem; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.25rem;" class="type-selector">
+              <input type="radio" name="interview_type" value="mixed" checked style="accent-color: var(--primary);">
+              <span style="font-weight: 600; font-size: 0.9rem;">Mixed</span>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">Tech + Soft Skills</span>
+            </label>
+            <label style="border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.75rem; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.25rem;" class="type-selector">
+              <input type="radio" name="interview_type" value="technical" style="accent-color: var(--primary);">
+              <span style="font-weight: 600; font-size: 0.9rem;">Technical</span>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">Architecture & Code</span>
+            </label>
+            <label style="border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.75rem; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.25rem;" class="type-selector">
+              <input type="radio" name="interview_type" value="behavioral" style="accent-color: var(--primary);">
+              <span style="font-weight: 600; font-size: 0.9rem;">Behavioral</span>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">STAR & Leadership</span>
+            </label>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Custom Role Fields (Hidden unless 'custom' is selected) -->
+      <div id="custom-job-fields" style="{% if jobs %}display: none;{% endif %} background-color: var(--bg-subtle); padding: 1.5rem; border-radius: var(--radius-md); border: 1px dashed var(--border-color); margin-bottom: 1.5rem;">
+        <h4 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 1rem; color: var(--secondary);">
+          Custom Position Details
+        </h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+          <div class="form-group">
+            <label class="form-label" for="custom_role">Target Role Title</label>
+            <input type="text" name="custom_role" id="custom_role" class="form-control" placeholder="e.g. Backend Engineering Intern">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="custom_company">Target Company</label>
+            <input type="text" name="custom_company" id="custom_company" class="form-control" placeholder="e.g. Stripe, Spotify, Google">
+          </div>
+        </div>
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label" for="custom_desc">Role Context or Requirements (Optional)</label>
+          <textarea name="custom_desc" id="custom_desc" class="form-control" rows="3" placeholder="Paste job summary, key technologies, or specific topics you want to practice..."></textarea>
+        </div>
+      </div>
+
+      <!-- Question Count and Submission -->
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <label for="total_questions" style="font-weight: 600; font-size: 0.9rem; color: var(--text-main); margin: 0;">
+            Number of Questions:
+          </label>
+          <select name="total_questions" id="total_questions" class="form-control" style="width: auto; padding: 0.4rem 0.8rem;">
+            <option value="3">3 Questions (Quick Sprint)</option>
+            <option value="5" selected>5 Questions (Standard Simulation)</option>
+            <option value="8">8 Questions (Comprehensive Deep-Dive)</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="btn-start-interview" style="padding: 0.75rem 1.75rem; font-size: 1rem;">
+          <span>Start Interview Session</span>
+          <span style="margin-left: 0.4rem;">🎙️</span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Past Completed Interview Sessions -->
+  {% if completed_sessions %}
+  <div class="card" style="padding: 1.75rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+      <h3 style="font-size: 1.2rem; font-weight: 600; color: var(--secondary); margin: 0;">
+        Completed Interview Sessions ({{ completed_sessions|length }})
+      </h3>
+    </div>
+
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.92rem;">
+        <thead>
+          <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-muted); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em;">
+            <th style="padding: 0.75rem 1rem;">Role & Company</th>
+            <th style="padding: 0.75rem 1rem;">Type</th>
+            <th style="padding: 0.75rem 1rem;">Questions</th>
+            <th style="padding: 0.75rem 1rem;">Score</th>
+            <th style="padding: 0.75rem 1rem;">Date</th>
+            <th style="padding: 0.75rem 1rem; text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cs in completed_sessions %}
+          <tr style="border-bottom: 1px solid var(--border-color);">
+            <td style="padding: 1rem;">
+              <div style="font-weight: 600; color: var(--secondary);">{{ cs.job_title or 'Software Engineering Intern' }}</div>
+              <div style="font-size: 0.82rem; color: var(--text-muted);">{{ cs.job_company or 'Technology Company' }}</div>
+            </td>
+            <td style="padding: 1rem;">
+              <span class="badge" style="background-color: var(--primary-light); color: var(--primary); text-transform: capitalize;">
+                {{ cs.interview_type }}
+              </span>
+            </td>
+            <td style="padding: 1rem; color: var(--text-main);">
+              {{ cs.total_questions }} Questions
+            </td>
+            <td style="padding: 1rem;">
+              {% if cs.overall_score %}
+                {% if cs.overall_score >= 8.0 %}
+                  <span class="badge" style="background-color: var(--success-bg); color: var(--success); font-weight: 700; font-size: 0.9rem;">
+                    {{ cs.overall_score }}/10
+                  </span>
+                {% elif cs.overall_score >= 6.0 %}
+                  <span class="badge" style="background-color: var(--warning-bg); color: #d97706; font-weight: 700; font-size: 0.9rem;">
+                    {{ cs.overall_score }}/10
+                  </span>
+                {% else %}
+                  <span class="badge" style="background-color: var(--danger-bg); color: var(--danger); font-weight: 700; font-size: 0.9rem;">
+                    {{ cs.overall_score }}/10
+                  </span>
+                {% endif %}
+              {% else %}
+                <span style="color: var(--text-muted);">—</span>
+              {% endif %}
+            </td>
+            <td style="padding: 1rem; color: var(--text-muted); font-size: 0.85rem;">
+              {{ cs.created_at[:10] if cs.created_at else 'Recent' }}
+            </td>
+            <td style="padding: 1rem; text-align: right;">
+              <a href="{{ url_for('interview.session_summary', session_id=cs.session_id) }}" class="btn btn-secondary btn-sm">
+                View Report 📊
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleCustomJobFields(value) {
+  const customBox = document.getElementById('custom-job-fields');
+  if (value === 'custom' || value === '') {
+    customBox.style.display = 'block';
+  } else {
+    customBox.style.display = 'none';
+  }
+}
+
+document.getElementById('start-interview-form')?.addEventListener('submit', function() {
+  const overlay = document.getElementById('loading-overlay');
+  const overlayText = document.getElementById('loading-overlay-text');
+  if (overlay && overlayText) {
+    overlayText.textContent = "AI Interviewer is analyzing the role and generating Question #1...";
+    overlay.style.display = 'flex';
+  }
+});
+</script>
+{% endblock %}

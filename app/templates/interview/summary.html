@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Interview Report: {{ job.title if job else 'Engineering Intern' }} — InternAI{% endblock %}
+{% block header_title %}Mock Interview Performance Report{% endblock %}
+
+{% block content %}
+<div style="max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 2rem;">
+
+  <!-- Hero Header Card -->
+  <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff; padding: 2.5rem 2rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); position: relative; overflow: hidden;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1.5rem;">
+      <div>
+        <div style="display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); padding: 0.35rem 0.85rem; border-radius: var(--radius-full); font-size: 0.85rem; color: #a7f3d0; margin-bottom: 1rem;">
+          <span>✓</span>
+          <span style="font-weight: 600;">Mock Interview Completed</span>
+        </div>
+        <h1 style="font-size: 2.1rem; font-weight: 700; margin-bottom: 0.4rem; letter-spacing: -0.02em;">
+          {{ job.title if job else 'Software Engineering Intern' }}
+        </h1>
+        <p style="font-size: 1.05rem; opacity: 0.85; margin: 0;">
+          Target Company: <strong>{{ job.company if job else 'Technology Company' }}</strong> &bull;
+          Format: <span style="text-transform: capitalize;">{{ interview_session.interview_type }}</span> &bull;
+          Total Questions: {{ interview_session.total_questions }}
+        </p>
+      </div>
+
+      <!-- Score Ring Card -->
+      <div style="background: rgba(255,255,255,0.08); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.15); border-radius: var(--radius-md); padding: 1.25rem 2rem; text-align: center; min-width: 170px;">
+        <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.8; margin-bottom: 0.25rem;">
+          Overall Score
+        </div>
+        <div style="font-size: 2.8rem; font-weight: 800; line-height: 1; color: {% if avg_score >= 8.0 %}#34d399{% elif avg_score >= 6.0 %}#fbbf24{% else %}#f87171{% endif %};">
+          {{ avg_score }}
+          <span style="font-size: 1.2rem; font-weight: 500; opacity: 0.7;">/10</span>
+        </div>
+        <div style="font-size: 0.78rem; opacity: 0.8; margin-top: 0.35rem;">
+          {% if avg_score >= 8.0 %}
+            ⭐ Highly Competitive
+          {% elif avg_score >= 6.0 %}
+            👍 Solid Foundation
+          {% else %}
+            📈 Needs Practice
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Executive Verdict Card -->
+  <div class="card" style="padding: 1.75rem;">
+    <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+      <span>📋</span> Overall Readiness Assessment
+    </h3>
+    <p style="font-size: 1rem; color: var(--text-main); line-height: 1.6; margin: 0;">
+      {{ summary.verdict if summary.verdict else 'You completed all interview questions. Review your strengths and targeted growth areas below.' }}
+    </p>
+  </div>
+
+  <!-- Strengths and Improvement Grid -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
+    
+    <!-- Key Strengths -->
+    <div class="card" style="padding: 1.5rem; border-top: 4px solid var(--success);">
+      <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--secondary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+        <span style="color: var(--success);">✓</span> Top Strengths Demonstrated
+      </h3>
+      <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem;">
+        {% if summary.key_strengths %}
+          {% for st in summary.key_strengths %}
+          <li style="display: flex; align-items: flex-start; gap: 0.6rem; font-size: 0.92rem; line-height: 1.5; color: var(--text-main);">
+            <span style="color: var(--success); font-weight: bold; margin-top: 0.1rem;">•</span>
+            <span>{{ st }}</span>
+          </li>
+          {% endfor %}
+        {% else %}
+          <li style="color: var(--text-muted); font-size: 0.9rem;">Consistent professional tone and willingness to tackle technical scenarios.</li>
+        {% endif %}
+      </ul>
+    </div>
+
+    <!-- Targeted Improvement Areas -->
+    <div class="card" style="padding: 1.5rem; border-top: 4px solid #f59e0b;">
+      <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--secondary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+        <span style="color: #d97706;">💡</span> Top 3 Areas to Polish
+      </h3>
+      <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem;">
+        {% if summary.top_improvement_areas %}
+          {% for imp in summary.top_improvement_areas %}
+          <li style="display: flex; align-items: flex-start; gap: 0.6rem; font-size: 0.92rem; line-height: 1.5; color: var(--text-main);">
+            <span style="color: #d97706; font-weight: bold; margin-top: 0.1rem;">•</span>
+            <span>{{ imp }}</span>
+          </li>
+          {% endfor %}
+        {% else %}
+          <li style="color: var(--text-muted); font-size: 0.9rem;">Practice formulating answers with quantifiable metrics and STAR structure.</li>
+        {% endif %}
+      </ul>
+    </div>
+
+  </div>
+
+  <!-- Complete Turn-by-Turn Transcript Review -->
+  <div class="card" style="padding: 1.75rem;">
+    <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--secondary); margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+      <span>📑</span> Full Question-by-Question Transcript &amp; Feedback
+    </h3>
+
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+      {% for msg in messages %}
+      <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem; background-color: var(--bg-card);">
+        
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; flex-wrap: wrap; gap: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="badge" style="background-color: var(--primary-light); color: var(--primary); font-weight: 700;">
+              Question {{ msg.question_number }}
+            </span>
+          </div>
+          {% if msg.score is not none %}
+          <span class="badge" style="{% if msg.score >= 8 %}background-color: var(--success-bg); color: var(--success);{% elif msg.score >= 6 %}background-color: var(--warning-bg); color: #d97706;{% else %}background-color: var(--danger-bg); color: var(--danger);{% endif %} font-weight: 700; font-size: 0.88rem;">
+            Score: {{ msg.score }}/10
+          </span>
+          {% endif %}
+        </div>
+
+        <!-- Question text -->
+        <p style="font-size: 1rem; font-weight: 600; color: var(--secondary); margin-bottom: 0.75rem;">
+          {{ msg.question_text }}
+        </p>
+
+        <!-- Student Answer -->
+        <div style="background-color: var(--bg-subtle); border-radius: var(--radius-sm); padding: 0.85rem 1rem; margin-bottom: 0.85rem;">
+          <div style="font-size: 0.78rem; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 0.25rem;">
+            Your Answer:
+          </div>
+          <p style="font-size: 0.92rem; color: var(--text-main); margin: 0; line-height: 1.5; white-space: pre-wrap;">{{ msg.student_answer or 'No answer recorded.' }}</p>
+        </div>
+
+        <!-- Feedback breakdown -->
+        {% if msg.strengths or msg.improvements %}
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 0.85rem;">
+          <div style="font-size: 0.88rem; color: var(--text-main);">
+            <strong style="color: var(--success); font-size: 0.82rem;">Key Strength:</strong>
+            <p style="margin: 0.2rem 0 0 0; line-height: 1.4;">{{ msg.strengths }}</p>
+          </div>
+          <div style="font-size: 0.88rem; color: var(--text-main);">
+            <strong style="color: #b45309; font-size: 0.82rem;">Improvement:</strong>
+            <p style="margin: 0.2rem 0 0 0; line-height: 1.4;">{{ msg.improvements }}</p>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Sample High-Impact Answer -->
+        {% if msg.sample_answer %}
+        <details style="margin-top: 0.5rem; border-top: 1px dashed var(--border-color); padding-top: 0.5rem;">
+          <summary style="font-size: 0.85rem; font-weight: 600; color: var(--primary); cursor: pointer;">
+            View Benchmark Model Answer
+          </summary>
+          <div style="background-color: var(--primary-light); border-left: 3px solid var(--primary); border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-top: 0.5rem; font-size: 0.88rem; color: var(--text-main); line-height: 1.5;">
+            {{ msg.sample_answer }}
+          </div>
+        </details>
+        {% endif %}
+
+      </div>
+      {% endfor %}
+    </div>
+
+  </div>
+
+  <!-- Bottom Action Buttons -->
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; padding-bottom: 2rem;">
+    <a href="{{ url_for('interview.index') }}" class="btn btn-secondary">
+      ← Back to Interview Lobby
+    </a>
+    <div style="display: flex; gap: 1rem;">
+      <button onclick="window.print()" class="btn btn-secondary">
+        <span>🖨️ Print / Save PDF</span>
+      </button>
+      <a href="{{ url_for('interview.index') }}" class="btn btn-primary">
+        <span>Start Another Mock Interview 🎙️</span>
+      </a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

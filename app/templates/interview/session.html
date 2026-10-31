@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Question {{ current_message.question_number if current_message else interview_session.current_question_index }} of {{ interview_session.total_questions }} — Mock Interview{% endblock %}
+{% block header_title %}Mock Interview Session{% endblock %}
+
+{% block content %}
+<div style="max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem;">
+
+  <!-- Session Control Bar -->
+  <div class="card" style="padding: 1.25rem 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 0.75rem;">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span style="font-size: 1.5rem;">🎙️</span>
+        <div>
+          <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--secondary); margin: 0;">
+            {{ job.title if job else 'Software Engineering Intern' }}
+          </h2>
+          <span style="font-size: 0.85rem; color: var(--text-muted);">
+            at {{ job.company if job else 'Technology Company' }} &bull;
+            <strong style="text-transform: capitalize; color: var(--primary);">{{ interview_session.interview_type }} Interview</strong>
+          </span>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <span style="font-size: 0.9rem; font-weight: 600; color: var(--text-main);">
+          Question {{ current_message.question_number if current_message else interview_session.total_questions }} of {{ interview_session.total_questions }}
+        </span>
+        <form action="{{ url_for('interview.abandon_session', session_id=interview_session.session_id) }}" method="POST" onsubmit="return confirm('Are you sure you want to end and abandon this interview?');" style="margin: 0;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-secondary btn-sm" style="color: var(--danger); font-size: 0.8rem;">
+            Quit Session
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Progress Bar -->
+    {% set current_num = (current_message.question_number - 1) if current_message else interview_session.total_questions %}
+    {% set pct = (current_num / interview_session.total_questions * 100) | round | int %}
+    <div style="background-color: var(--bg-subtle); border-radius: var(--radius-full); height: 8px; width: 100%; overflow: hidden;">
+      <div id="session-progress-bar" style="background: linear-gradient(90deg, var(--primary) 0%, #38bdf8 100%); height: 100%; width: {{ pct }}%; transition: width 0.4s ease;"></div>
+    </div>
+  </div>
+
+  <!-- Messages History Container -->
+  <div id="messages-container" style="display: flex; flex-direction: column; gap: 1.5rem;">
+    {% for msg in messages %}
+      {% if msg.student_answer %}
+        <!-- Completed Question & Feedback Block -->
+        <div class="card" style="padding: 1.5rem; border-left: 4px solid var(--primary);">
+          
+          <!-- Question Header -->
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+            <span class="badge" style="background-color: var(--primary-light); color: var(--primary); font-weight: 600;">
+              Question {{ msg.question_number }}
+            </span>
+          </div>
+          <p style="font-size: 1.05rem; font-weight: 600; color: var(--secondary); margin-bottom: 1rem; line-height: 1.5;">
+            {{ msg.question_text }}
+          </p>
+
+          <!-- Candidate Answer -->
+          <div style="background-color: var(--bg-app); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 1.25rem;">
+            <div style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.35rem;">
+              Your Response:
+            </div>
+            <p style="font-size: 0.95rem; color: var(--text-main); margin: 0; line-height: 1.6; white-space: pre-wrap;">{{ msg.student_answer }}</p>
+          </div>
+
+          <!-- AI Coaching Evaluation Card -->
+          <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md); padding: 1.25rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-size: 1.1rem;">🎯</span>
+                <span style="font-weight: 700; color: var(--secondary); font-size: 0.95rem;">AI Coaching Evaluation</span>
+              </div>
+              <div>
+                {% if msg.score >= 8 %}
+                  <span class="badge" style="background-color: var(--success-bg); color: var(--success); font-size: 0.9rem; font-weight: 700; padding: 0.35rem 0.75rem;">
+                    Score: {{ msg.score }}/10 (Outstanding)
+                  </span>
+                {% elif msg.score >= 6 %}
+                  <span class="badge" style="background-color: var(--warning-bg); color: #d97706; font-size: 0.9rem; font-weight: 700; padding: 0.35rem 0.75rem;">
+                    Score: {{ msg.score }}/10 (Solid)
+                  </span>
+                {% else %}
+                  <span class="badge" style="background-color: var(--danger-bg); color: var(--danger); font-size: 0.9rem; font-weight: 700; padding: 0.35rem 0.75rem;">
+                    Score: {{ msg.score }}/10 (Needs Work)
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Strengths -->
+            <div style="margin-bottom: 0.75rem;">
+              <strong style="color: var(--success); font-size: 0.88rem; display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.25rem;">
+                <span>✓</span> Key Strengths:
+              </strong>
+              <p style="font-size: 0.9rem; color: var(--text-main); margin: 0; line-height: 1.5;">
+                {{ msg.strengths }}
+              </p>
+            </div>
+
+            <!-- Improvement Areas -->
+            <div style="margin-bottom: 0.75rem;">
+              <strong style="color: #b45309; font-size: 0.88rem; display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.25rem;">
+                <span>💡</span> What to Improve:
+              </strong>
+              <p style="font-size: 0.9rem; color: var(--text-main); margin: 0; line-height: 1.5;">
+                {{ msg.improvements }}
+              </p>
+            </div>
+
+            <!-- Collapsible Sample 10/10 Answer -->
+            {% if msg.sample_answer %}
+            <details style="margin-top: 0.75rem; border-top: 1px dashed var(--border-color); padding-top: 0.75rem;">
+              <summary style="font-size: 0.88rem; font-weight: 600; color: var(--primary); cursor: pointer;">
+                View High-Impact Model Answer (10/10 Benchmark)
+              </summary>
+              <div style="background-color: var(--primary-light); border-left: 3px solid var(--primary); border-radius: var(--radius-sm); padding: 0.85rem 1rem; margin-top: 0.5rem; font-size: 0.88rem; color: var(--text-main); line-height: 1.6;">
+                {{ msg.sample_answer }}
+              </div>
+            </details>
+            {% endif %}
+
+          </div>
+
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <!-- Active Unanswered Question Card -->
+  {% if current_message %}
+  <div class="card" id="active-question-card" style="padding: 2rem; border-left: 5px solid #0284c7; box-shadow: var(--shadow-md);">
+    
+    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+      <span class="badge" style="background-color: var(--info-bg); color: var(--info); font-weight: 700; font-size: 0.88rem;">
+        Active Question #{{ current_message.question_number }} of {{ interview_session.total_questions }}
+      </span>
+      <span style="font-size: 0.8rem; color: var(--text-muted);">&bull; Answer out loud or in writing</span>
+    </div>
+
+    <h3 id="current-question-text" style="font-size: 1.25rem; font-weight: 700; color: var(--secondary); margin-bottom: 1.25rem; line-height: 1.5;">
+      {{ current_message.question_text }}
+    </h3>
+
+    <!-- Coaching Guide Tip -->
+    <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-bottom: 1.25rem; display: flex; align-items: flex-start; gap: 0.6rem;">
+      <span style="font-size: 1.1rem; line-height: 1;">💡</span>
+      <div style="font-size: 0.85rem; color: #166534; line-height: 1.5;">
+        <strong>Interview Tip:</strong> 
+        For behavioral questions, follow the <strong>STAR</strong> format (Situation, Task, Action, Result). 
+        For technical questions, state your design assumptions, explain trade-offs, and mention metrics where possible.
+      </div>
+    </div>
+
+    <!-- Answer Submission Form -->
+    <form id="answer-form" action="{{ url_for('interview.submit_answer', session_id=interview_session.session_id) }}" method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+          <label class="form-label" for="student_answer" style="margin: 0; font-weight: 600;">
+            Your Answer:
+          </label>
+          <span id="word-count-badge" style="font-size: 0.8rem; color: var(--text-muted);">
+            0 words (aim for 50–150 words)
+          </span>
+        </div>
+        <textarea 
+          name="student_answer" 
+          id="student_answer" 
+          class="form-control" 
+          rows="6" 
+          required 
+          placeholder="Type your complete answer here. Be specific, articulate your thoughts clearly, and mention real examples from your projects or coursework..."
+          style="font-size: 0.95rem; line-height: 1.6; resize: vertical;"
+        ></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; align-items: center; gap: 1rem; margin-top: 1rem;">
+        <button type="submit" class="btn btn-primary" id="btn-submit-answer" style="padding: 0.75rem 1.75rem; font-size: 1rem; display: inline-flex; align-items: center; gap: 0.5rem;">
+          <span>Submit for AI Coaching</span>
+          <span>⚡</span>
+        </button>
+      </div>
+    </form>
+
+  </div>
+  {% else %}
+  <!-- All answered fallback -->
+  <div class="card text-center" style="padding: 2.5rem;">
+    <h3>All questions have been answered!</h3>
+    <p>Generating your comprehensive performance summary report...</p>
+    <a href="{{ url_for('interview.session_summary', session_id=interview_session.session_id) }}" class="btn btn-primary">
+      View Summary Report 📊
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Word counter
+const answerArea = document.getElementById('student_answer');
+const wordBadge = document.getElementById('word-count-badge');
+
+if (answerArea && wordBadge) {
+  answerArea.addEventListener('input', function() {
+    const text = this.value.trim();
+    const count = text ? text.split(/\s+/).length : 0;
+    wordBadge.textContent = `${count} words ${count >= 40 ? '✓' : '(aim for 50–150 words)'}`;
+    if (count >= 40) {
+      wordBadge.style.color = 'var(--success)';
+    } else {
+      wordBadge.style.color = 'var(--text-muted)';
+    }
+  });
+}
+
+// Form submission handler with overlay
+const answerForm = document.getElementById('answer-form');
+if (answerForm) {
+  answerForm.addEventListener('submit', function(e) {
+    const btn = document.getElementById('btn-submit-answer');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span>Evaluating Answer...</span> <span class="spinner-small"></span>';
+    }
+
+    const overlay = document.getElementById('loading-overlay');
+    const overlayText = document.getElementById('loading-overlay-text');
+    if (overlay && overlayText) {
+      overlayText.textContent = "AI is evaluating your answer, scoring communication & technical accuracy...";
+      overlay.style.display = 'flex';
+    }
+  });
+}
+</script>
+{% endblock %}
