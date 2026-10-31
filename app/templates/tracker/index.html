@@ -1,0 +1,495 @@
+{% extends "base.html" %}
+
+{% block title %}Internship Application Tracker — InternAI{% endblock %}
+{% block header_title %}Internship Kanban Pipeline{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; gap: 1.5rem;">
+
+  <!-- Header & Metrics -->
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h1 style="font-size: 1.75rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.25rem;">
+        Application Pipeline Tracker
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">
+        Track your internship search from saved opportunities through applications, interviews, and offers.
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 0.75rem; align-items: center;">
+      <!-- Search Filter -->
+      <div style="position: relative;">
+        <input 
+          type="text" 
+          id="pipeline-search" 
+          placeholder="Filter by role or company..." 
+          class="form-control" 
+          style="padding-left: 2rem; width: 240px; font-size: 0.88rem;"
+          onkeyup="filterCards(this.value)"
+        >
+        <span style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.85rem;">🔍</span>
+      </div>
+
+      <button type="button" class="btn btn-primary" onclick="openAddModal()">
+        <span>+ Add Application</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Pipeline KPI Summary Cards -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+    <div class="card" style="padding: 1rem; border-left: 4px solid var(--primary);">
+      <div style="font-size: 0.78rem; text-transform: uppercase; font-weight: 600; color: var(--text-muted);">Total In Pipeline</div>
+      <div style="font-size: 1.6rem; font-weight: 700; color: var(--secondary); margin-top: 0.2rem;">{{ stats.total }}</div>
+    </div>
+    <div class="card" style="padding: 1rem; border-left: 4px solid #64748b;">
+      <div style="font-size: 0.78rem; text-transform: uppercase; font-weight: 600; color: var(--text-muted);">Saved</div>
+      <div style="font-size: 1.6rem; font-weight: 700; color: #475569; margin-top: 0.2rem;">{{ stats.saved }}</div>
+    </div>
+    <div class="card" style="padding: 1rem; border-left: 4px solid #0284c7;">
+      <div style="font-size: 0.78rem; text-transform: uppercase; font-weight: 600; color: var(--text-muted);">Applied</div>
+      <div style="font-size: 1.6rem; font-weight: 700; color: #0369a1; margin-top: 0.2rem;">{{ stats.applied }}</div>
+    </div>
+    <div class="card" style="padding: 1rem; border-left: 4px solid #d97706;">
+      <div style="font-size: 0.78rem; text-transform: uppercase; font-weight: 600; color: var(--text-muted);">Interviews</div>
+      <div style="font-size: 1.6rem; font-weight: 700; color: #b45309; margin-top: 0.2rem;">{{ stats.interview }}</div>
+    </div>
+    <div class="card" style="padding: 1rem; border-left: 4px solid var(--success);">
+      <div style="font-size: 0.78rem; text-transform: uppercase; font-weight: 600; color: var(--text-muted);">Offers</div>
+      <div style="font-size: 1.6rem; font-weight: 700; color: var(--success); margin-top: 0.2rem;">{{ stats.offer }}</div>
+    </div>
+    <div class="card" style="padding: 1rem; border-left: 4px solid var(--danger);">
+      <div style="font-size: 0.78rem; text-transform: uppercase; font-weight: 600; color: var(--text-muted);">Deadlines Soon</div>
+      <div style="font-size: 1.6rem; font-weight: 700; color: var(--danger); margin-top: 0.2rem;">{{ stats.upcoming_deadlines }}</div>
+    </div>
+  </div>
+
+  <!-- Drag-and-Drop Instructions Tip -->
+  <div style="background-color: var(--primary-light); border-left: 3px solid var(--primary); padding: 0.6rem 1rem; border-radius: var(--radius-sm); font-size: 0.85rem; color: var(--primary); display: flex; align-items: center; justify-content: space-between;">
+    <span>💡 <strong>Pro Tip:</strong> Drag and drop any card between columns to update status, or use the quick stage dropdown on each card.</span>
+    <span style="font-size: 0.8rem; opacity: 0.8;">Auto-syncs to database</span>
+  </div>
+
+  <!-- Kanban Board Columns Container -->
+  <div class="kanban-board" style="display: grid; grid-template-columns: repeat(5, minmax(240px, 1fr)); gap: 1rem; overflow-x: auto; padding-bottom: 1.5rem; align-items: flex-start;">
+    
+    {% for status_name in valid_statuses %}
+    <!-- Column -->
+    <div 
+      class="kanban-column" 
+      data-status="{{ status_name }}" 
+      ondragover="handleDragOver(event)" 
+      ondragleave="handleDragLeave(event)" 
+      ondrop="handleDrop(event)"
+      style="background-color: #f1f5f9; border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; min-height: 480px; border: 2px dashed transparent; transition: border-color 0.2s ease, background-color 0.2s ease;"
+    >
+      <!-- Column Header -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; padding-bottom: 0.5rem; border-bottom: 2px solid {% if status_name == 'Saved' %}#94a3b8{% elif status_name == 'Applied' %}#38bdf8{% elif status_name == 'Interview' %}#fbbf24{% elif status_name == 'Offer' %}#34d399{% else %}#cbd5e1{% endif %};">
+        <div style="display: flex; align-items: center; gap: 0.4rem;">
+          <span style="font-size: 1rem;">
+            {% if status_name == 'Saved' %}📌
+            {% elif status_name == 'Applied' %}📨
+            {% elif status_name == 'Interview' %}🎙️
+            {% elif status_name == 'Offer' %}🎉
+            {% else %}📁{% endif %}
+          </span>
+          <span style="font-weight: 700; font-size: 0.95rem; color: var(--secondary);">{{ status_name }}</span>
+        </div>
+        <span class="column-count badge" id="count-{{ status_name }}" style="background-color: #ffffff; color: var(--text-main); font-weight: 700; box-shadow: var(--shadow-sm);">
+          {{ columns[status_name]|length }}
+        </span>
+      </div>
+
+      <!-- Cards Container for Column -->
+      <div class="cards-list" id="cards-{{ status_name }}" style="display: flex; flex-direction: column; gap: 0.75rem; flex-grow: 1;">
+        {% for app in columns[status_name] %}
+        <!-- Application Card -->
+        <div 
+          class="card kanban-card" 
+          id="app-card-{{ app.application_id }}" 
+          data-app-id="{{ app.application_id }}" 
+          data-search="{{ app.role_title|lower }} {{ app.company_name|lower }}"
+          draggable="true" 
+          ondragstart="handleDragStart(event)" 
+          ondragend="handleDragEnd(event)"
+          style="padding: 1rem; cursor: grab; box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); border-radius: var(--radius-sm); background-color: #ffffff; transition: transform 0.15s ease, box-shadow 0.15s ease;"
+        >
+          <!-- Top Row: Company & Menu -->
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.35rem;">
+            <div style="font-weight: 700; font-size: 0.95rem; color: var(--secondary); line-height: 1.3;">
+              {{ app.role_title }}
+            </div>
+            <button 
+              type="button" 
+              onclick="openEditModal({{ app.application_id }})" 
+              title="Edit application"
+              style="background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 0.85rem; padding: 0 0.2rem;"
+            >
+              ✏️
+            </button>
+          </div>
+
+          <!-- Company -->
+          <div style="font-size: 0.88rem; font-weight: 600; color: var(--primary); margin-bottom: 0.5rem;">
+            {{ app.company_name }}
+          </div>
+
+          <!-- Deadline Tag (if any) -->
+          {% if app.deadline %}
+          <div style="margin-bottom: 0.6rem;">
+            {% if app.deadline_meta.badge == 'danger' %}
+              <span class="badge" style="background-color: var(--danger-bg); color: var(--danger); font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.5rem;">
+                ⏰ {{ app.deadline_meta.label }}
+              </span>
+            {% elif app.deadline_meta.badge == 'warning' %}
+              <span class="badge" style="background-color: var(--warning-bg); color: #d97706; font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.5rem;">
+                ⏳ {{ app.deadline_meta.label }}
+              </span>
+            {% elif app.deadline_meta.badge == 'info' %}
+              <span class="badge" style="background-color: var(--info-bg); color: var(--info); font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.5rem;">
+                📅 {{ app.deadline_meta.label }}
+              </span>
+            {% else %}
+              <span style="font-size: 0.78rem; color: var(--text-muted);">
+                📅 {{ app.deadline[:10] }}
+              </span>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          <!-- Notes preview (if any) -->
+          {% if app.notes %}
+          <div style="font-size: 0.8rem; color: var(--text-muted); background: var(--bg-subtle); padding: 0.35rem 0.5rem; border-radius: 4px; margin-bottom: 0.6rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            📝 {{ app.notes }}
+          </div>
+          {% endif %}
+
+          <!-- Card Bottom Controls: stage selector + delete -->
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 0.5rem; margin-top: 0.25rem;">
+            <select 
+              class="form-control" 
+              style="padding: 0.2rem 0.4rem; font-size: 0.75rem; width: auto; height: auto;" 
+              onchange="changeStatusDropdown({{ app.application_id }}, this.value)"
+            >
+              {% for opt in valid_statuses %}
+              <option value="{{ opt }}" {% if opt == app.status %}selected{% endif %}>{{ opt }}</option>
+              {% endfor %}
+            </select>
+
+            <form action="{{ url_for('tracker.delete_application', app_id=app.application_id) }}" method="POST" onsubmit="return confirm('Delete this application from tracker?');" style="margin: 0;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" style="background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 0.78rem;" title="Delete">
+                🗑️
+              </button>
+            </form>
+          </div>
+
+        </div>
+        {% endfor %}
+      </div>
+
+    </div>
+    {% endfor %}
+
+  </div>
+
+</div>
+
+<!-- Modal: Add Application -->
+<div id="add-app-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1050; align-items: center; justify-content: center; backdrop-filter: blur(2px);">
+  <div class="card" style="width: 100%; max-width: 520px; padding: 2rem; max-height: 90vh; overflow-y: auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+      <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; color: var(--secondary);">Add New Internship</h3>
+      <button type="button" onclick="closeAddModal()" style="background: none; border: none; font-size: 1.3rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+    </div>
+
+    <form action="{{ url_for('tracker.add_application') }}" method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label class="form-label" for="add-company">Company Name *</label>
+        <input type="text" name="company_name" id="add-company" class="form-control" required placeholder="e.g. Microsoft, Datadog">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="add-role">Role Title *</label>
+        <input type="text" name="role_title" id="add-role" class="form-control" required placeholder="e.g. Software Engineering Intern">
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label" for="add-status">Pipeline Stage</label>
+          <select name="status" id="add-status" class="form-control">
+            {% for s in valid_statuses %}
+            <option value="{{ s }}">{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="add-job-id">Link Analyzed Job</label>
+          <select name="job_id" id="add-job-id" class="form-control" onchange="autoFillFromJob(this.value)">
+            <option value="">None (Custom Entry)</option>
+            {% for j in jobs %}
+            <option value="{{ j.job_id }}" data-comp="{{ j.company }}" data-role="{{ j.title }}">
+              {{ j.title }} ({{ j.company }})
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label" for="add-app-date">Application Date</label>
+          <input type="date" name="application_date" id="add-app-date" class="form-control">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="add-deadline">Deadline</label>
+          <input type="date" name="deadline" id="add-deadline" class="form-control">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="add-notes">Notes / Referrals / Next Steps</label>
+        <textarea name="notes" id="add-notes" class="form-control" rows="2" placeholder="e.g. Applied via university portal, referred by alumnus..."></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+        <button type="button" class="btn btn-secondary" onclick="closeAddModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save to Pipeline</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Edit Application -->
+<div id="edit-app-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1050; align-items: center; justify-content: center; backdrop-filter: blur(2px);">
+  <div class="card" style="width: 100%; max-width: 520px; padding: 2rem; max-height: 90vh; overflow-y: auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+      <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; color: var(--secondary);">Edit Application</h3>
+      <button type="button" onclick="closeEditModal()" style="background: none; border: none; font-size: 1.3rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+    </div>
+
+    <form id="edit-app-form" method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label class="form-label" for="edit-company">Company Name *</label>
+        <input type="text" name="company_name" id="edit-company" class="form-control" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="edit-role">Role Title *</label>
+        <input type="text" name="role_title" id="edit-role" class="form-control" required>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label" for="edit-status">Pipeline Stage</label>
+          <select name="status" id="edit-status" class="form-control">
+            {% for s in valid_statuses %}
+            <option value="{{ s }}">{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="edit-job-id">Link Analyzed Job</label>
+          <select name="job_id" id="edit-job-id" class="form-control">
+            <option value="">None (Custom Entry)</option>
+            {% for j in jobs %}
+            <option value="{{ j.job_id }}">{{ j.title }} ({{ j.company }})</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label" for="edit-app-date">Application Date</label>
+          <input type="date" name="application_date" id="edit-app-date" class="form-control">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="edit-deadline">Deadline</label>
+          <input type="date" name="deadline" id="edit-deadline" class="form-control">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="edit-notes">Notes</label>
+        <textarea name="notes" id="edit-notes" class="form-control" rows="2"></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+        <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Update Application</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let draggedCardId = null;
+
+// Modal Controls
+function openAddModal() {
+  const modal = document.getElementById('add-app-modal');
+  modal.style.display = 'flex';
+}
+function closeAddModal() {
+  document.getElementById('add-app-modal').style.display = 'none';
+}
+
+function openEditModal(appId) {
+  fetch(`/tracker/application/${appId}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) return alert(data.error);
+      document.getElementById('edit-app-form').action = `/tracker/update/${appId}`;
+      document.getElementById('edit-company').value = data.company_name || '';
+      document.getElementById('edit-role').value = data.role_title || '';
+      document.getElementById('edit-status').value = data.status || 'Saved';
+      document.getElementById('edit-job-id').value = data.job_id || '';
+      document.getElementById('edit-app-date').value = data.application_date || '';
+      document.getElementById('edit-deadline').value = data.deadline || '';
+      document.getElementById('edit-notes').value = data.notes || '';
+      document.getElementById('edit-app-modal').style.display = 'flex';
+    })
+    .catch(err => console.error(err));
+}
+function closeEditModal() {
+  document.getElementById('edit-app-modal').style.display = 'none';
+}
+
+function autoFillFromJob(jobId) {
+  if (!jobId) return;
+  const select = document.getElementById('add-job-id');
+  const opt = select.options[select.selectedIndex];
+  if (opt) {
+    const comp = opt.getAttribute('data-comp');
+    const role = opt.getAttribute('data-role');
+    if (comp) document.getElementById('add-company').value = comp;
+    if (role) document.getElementById('add-role').value = role;
+  }
+}
+
+// Search Filter
+function filterCards(query) {
+  const q = query.toLowerCase().trim();
+  const cards = document.querySelectorAll('.kanban-card');
+  cards.forEach(card => {
+    const hay = card.getAttribute('data-search') || '';
+    if (!q || hay.includes(q)) {
+      card.style.display = 'block';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+}
+
+// Drag & Drop
+function handleDragStart(e) {
+  draggedCardId = e.currentTarget.getAttribute('data-app-id');
+  e.dataTransfer.setData('text/plain', draggedCardId);
+  e.currentTarget.style.opacity = '0.5';
+}
+
+function handleDragEnd(e) {
+  e.currentTarget.style.opacity = '1.0';
+  document.querySelectorAll('.kanban-column').forEach(col => {
+    col.style.borderColor = 'transparent';
+    col.style.backgroundColor = '#f1f5f9';
+  });
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  const col = e.currentTarget;
+  col.style.borderColor = 'var(--primary)';
+  col.style.backgroundColor = 'var(--primary-light)';
+}
+
+function handleDragLeave(e) {
+  const col = e.currentTarget;
+  col.style.borderColor = 'transparent';
+  col.style.backgroundColor = '#f1f5f9';
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  const col = e.currentTarget;
+  col.style.borderColor = 'transparent';
+  col.style.backgroundColor = '#f1f5f9';
+
+  const appId = e.dataTransfer.getData('text/plain') || draggedCardId;
+  const newStatus = col.getAttribute('data-status');
+  if (!appId || !newStatus) return;
+
+  const card = document.getElementById(`app-card-${appId}`);
+  if (card) {
+    const list = col.querySelector('.cards-list');
+    list.appendChild(card);
+    // Update card dropdown
+    const select = card.querySelector('select');
+    if (select) select.value = newStatus;
+  }
+
+  updateColumnCounts();
+  syncStatusToBackend(appId, newStatus);
+}
+
+function changeStatusDropdown(appId, newStatus) {
+  const card = document.getElementById(`app-card-${appId}`);
+  const targetCol = document.querySelector(`.kanban-column[data-status="${newStatus}"]`);
+  if (card && targetCol) {
+    const list = targetCol.querySelector('.cards-list');
+    list.appendChild(card);
+  }
+  updateColumnCounts();
+  syncStatusToBackend(appId, newStatus);
+}
+
+function syncStatusToBackend(appId, newStatus) {
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+  fetch(`/tracker/update-status/${appId}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': csrfToken,
+    },
+    body: JSON.stringify({ status: newStatus }),
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      if (typeof showToast === 'function') {
+        showToast(`Moved to ${newStatus}`, 'success');
+      }
+    } else {
+      alert(data.error || 'Failed to update status');
+      location.reload();
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    alert('Network error updating status');
+    location.reload();
+  });
+}
+
+function updateColumnCounts() {
+  document.querySelectorAll('.kanban-column').forEach(col => {
+    const st = col.getAttribute('data-status');
+    const cnt = col.querySelectorAll('.kanban-card').length;
+    const badge = document.getElementById(`count-${st}`);
+    if (badge) badge.textContent = cnt;
+  });
+}
+</script>
+{% endblock %}
