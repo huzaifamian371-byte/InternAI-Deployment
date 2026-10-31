@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Customize Learning Roadmap — InternAI{% endblock %}
+
+{% block header_title %}Customize Learning Roadmap{% endblock %}
+
+{% block content %}
+<!-- Back Breadcrumb -->
+<div style="margin-bottom: 1.25rem;">
+  <a href="{{ url_for('roadmap.index') }}" style="color: var(--text-muted); font-size: 0.9rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+    ← Back to Roadmaps
+  </a>
+</div>
+
+<!-- Header Card -->
+<div class="card" style="border-left: 5px solid var(--primary); margin-bottom: 1.5rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <span class="badge badge-gray" style="margin-bottom: 0.35rem;">🏢 {{ job.company }}</span>
+      <h1 style="font-size: 1.65rem; font-weight: 800; color: var(--secondary);">
+        Learning Roadmap for {{ job.title }}
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 0.25rem;">
+        Configure your available timeframe and study schedule to generate a structured, week-by-week curriculum.
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- Left Column: Missing Skills Breakdown -->
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Skills Targeted in this Roadmap ({{ missing_skills|length }})</h2>
+          <p class="card-subtitle">Identified gaps from your skill match for this role</p>
+        </div>
+      </div>
+
+      {% if missing_skills %}
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        {% for m in missing_skills %}
+        <div style="background-color: {% if m.importance == 'critical' %}var(--danger-bg){% else %}var(--info-bg){% endif %}; border: 1px solid {% if m.importance == 'critical' %}var(--danger-border){% else %}var(--info-border){% endif %}; border-radius: var(--radius-md); padding: 0.85rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+            <strong style="color: {% if m.importance == 'critical' %}#991b1b{% else %}#0369a1{% endif %}; font-size: 0.95rem;">
+              {{ m.requirement }}
+            </strong>
+            <span class="badge {% if m.importance == 'critical' %}badge-danger{% else %}badge-info{% endif %}" style="font-size: 0.7rem; text-transform: uppercase;">
+              {{ 'Critical Gap' if m.importance == 'critical' else 'Preferred Skill' }}
+            </span>
+          </div>
+          <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.4;">
+            {{ m.reason }}
+          </p>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div style="padding: 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.9rem;">
+        🎉 You matched all core skills for this role! The roadmap will focus on advanced mastery, cloud deployments, and capstone portfolio projects.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right Column: Timeline & Commitment Configuration -->
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Roadmap Parameters</h2>
+          <p class="card-subtitle">Choose your target deadline and weekly availability</p>
+        </div>
+      </div>
+
+      <form method="POST" action="{{ url_for('roadmap.generate', job_id=job.job_id) }}" id="roadmap-gen-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+        <div class="form-group">
+          <label for="total_weeks" class="form-label">Available Preparation Weeks</label>
+          <select id="total_weeks" name="total_weeks" class="form-control" required>
+            <option value="2">2 Weeks — Intensive Crash Course (Fast turnaround)</option>
+            <option value="4" selected>4 Weeks — Standard Preparation Sprint (Recommended)</option>
+            <option value="8">8 Weeks — Comprehensive Two-Month Journey</option>
+            <option value="12">12 Weeks — Full Academic Semester Plan</option>
+          </select>
+          <div class="form-text">
+            Topics will be paced across these weeks, prioritizing critical skills in early weeks.
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 1.25rem;">
+          <label for="hours_per_week" class="form-label">Weekly Hours Commitment</label>
+          <select id="hours_per_week" name="hours_per_week" class="form-control" required>
+            <option value="5">5 Hours / Week — Light (1 hour/day on weekdays)</option>
+            <option value="10" selected>10 Hours / Week — Balanced (1-2 hours/day + weekend)</option>
+            <option value="15">15 Hours / Week — Dedicated Student Preparation</option>
+            <option value="20">20 Hours / Week — Intensive Bootcamp Pacing</option>
+          </select>
+          <div class="form-text">
+            Milestones and practice projects are sized according to your weekly study bandwidth.
+          </div>
+        </div>
+
+        <div style="margin-top: 2rem;">
+          <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
+            ✨ Generate AI Learning Roadmap
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById("roadmap-gen-form").addEventListener("submit", function() {
+    showSpinner("Building custom weekly curriculum and portfolio projects with AI...");
+  });
+</script>
+{% endblock %}
