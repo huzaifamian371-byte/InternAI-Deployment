@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}AI Internship Job Analyzer — InternAI{% endblock %}
+
+{% block header_title %}Job Analyzer{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+  <h1 style="font-size: 1.75rem; font-weight: 800; color: var(--secondary); letter-spacing: -0.02em;">
+    AI Internship Job Analyzer 🔍
+  </h1>
+  <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem;">
+    Paste any raw internship job description to extract structured requirements, technologies, duration, and stipend.
+  </p>
+</div>
+
+<!-- Input Form Card -->
+<div class="card" style="margin-bottom: 2rem;">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Paste Internship Description</h2>
+      <p class="card-subtitle">AI extracts structured metadata, required technical skills, and role parameters</p>
+    </div>
+    <!-- Quick Demo Preset Buttons -->
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+      <button type="button" class="btn btn-secondary btn-sm" id="btn-load-sample-1">
+        📋 Load Sample: Backend Intern
+      </button>
+      <button type="button" class="btn btn-secondary btn-sm" id="btn-load-sample-2">
+        📋 Load Sample: Full-Stack Intern
+      </button>
+    </div>
+  </div>
+
+  <form method="POST" action="{{ url_for('analyzer.parse') }}" id="job-analyze-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+    <div class="form-group">
+      <label for="raw_text" class="form-label">Job Posting Text</label>
+      <textarea 
+        id="raw_text" 
+        name="raw_text" 
+        class="form-control" 
+        rows="10" 
+        placeholder="Paste full job posting text here (e.g. from LinkedIn, Handshake, Indeed, or company career page)..."
+        style="font-family: inherit; font-size: 0.9rem; line-height: 1.5; min-height: 220px;"
+        required
+      ></textarea>
+      <div class="form-text">
+        🔒 InternAI treats all pasted job descriptions as untrusted text and applies prompt-injection safeguards.
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+      <button type="submit" class="btn btn-primary btn-lg" id="submit-btn" style="min-width: 240px;">
+        ✨ Analyze Job with AI
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- Past Analyzed Postings Table -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Your Analyzed Postings ({{ jobs|length }})</h2>
+      <p class="card-subtitle">Saved opportunities and parsed metadata</p>
+    </div>
+  </div>
+
+  {% if jobs %}
+  <div style="overflow-x: auto;">
+    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+      <thead>
+        <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-muted);">
+          <th style="padding: 0.85rem 0.75rem;">Role & Company</th>
+          <th style="padding: 0.85rem 0.75rem;">Work Type / Location</th>
+          <th style="padding: 0.85rem 0.75rem;">Stipend / Comp</th>
+          <th style="padding: 0.85rem 0.75rem;">Skill Match</th>
+          <th style="padding: 0.85rem 0.75rem; text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for j in jobs %}
+        <tr style="border-bottom: 1px solid var(--border-color);">
+          <td style="padding: 0.85rem 0.75rem;">
+            <div style="font-weight: 700; color: var(--secondary);">{{ j.title }}</div>
+            <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.15rem;">🏢 {{ j.company }}</div>
+          </td>
+          <td style="padding: 0.85rem 0.75rem;">
+            <span class="badge badge-gray" style="text-transform: capitalize;">{{ j.work_type }}</span>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;">📍 {{ j.location or 'Not specified' }}</div>
+          </td>
+          <td style="padding: 0.85rem 0.75rem; font-weight: 500;">
+            {{ j.stipend or 'Not specified' }}
+          </td>
+          <td style="padding: 0.85rem 0.75rem;">
+            {% if j.match_percentage is not none %}
+              <span class="badge {% if j.match_percentage >= 75 %}badge-advanced{% elif j.match_percentage >= 50 %}badge-intermediate{% else %}badge-beginner{% endif %}">
+                🎯 {{ j.match_percentage }}% Match
+              </span>
+            {% else %}
+              <a href="{{ url_for('matcher.view_match', job_id=j.job_id) }}" class="btn btn-outline-primary btn-sm">
+                Check Match
+              </a>
+            {% endif %}
+          </td>
+          <td style="padding: 0.85rem 0.75rem; text-align: right;">
+            <div style="display: inline-flex; gap: 0.5rem; align-items: center;">
+              <a href="{{ url_for('analyzer.view_job', job_id=j.job_id) }}" class="btn btn-secondary btn-sm">
+                View Details
+              </a>
+              <a href="{{ url_for('matcher.view_match', job_id=j.job_id) }}" class="btn btn-primary btn-sm" title="Evaluate match against profile">
+                Match
+              </a>
+              <form method="POST" action="{{ url_for('analyzer.delete_job', job_id=j.job_id) }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete this job analysis?');" title="Delete">
+                  🗑️
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align: center; padding: 3rem 1rem; color: var(--text-muted);">
+    <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📄</div>
+    <div style="font-weight: 600; color: var(--secondary); font-size: 1.05rem;">No jobs analyzed yet</div>
+    <p style="font-size: 0.88rem; margin-top: 0.35rem;">
+      Paste an internship description above or click one of the sample buttons to test.
+    </p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Show global spinner on form submission
+  document.getElementById("job-analyze-form").addEventListener("submit", function(e) {
+    const text = document.getElementById("raw_text").value.trim();
+    if (text.length >= 30) {
+      showSpinner("Extracting requirements and analyzing job posting with AI...");
+    }
+  });
+
+  // Sample 1: Backend Engineering Intern
+  const SAMPLE_JOB_1 = `Software Engineer Intern — Backend Systems
+Datadog — New York, NY (Hybrid)
+Compensation: $48 - $55 / hour + housing stipend
+Duration: 12-week summer internship (June - August 2026)
+
+About the Role:
+As a Software Engineering Intern on the Backend Systems team, you will design, build, and optimize scalable microservices handling billions of metrics per day. You will collaborate with senior engineers to build fault-tolerant APIs and distributed streaming pipelines.
+
+Requirements:
+- Currently enrolled in a Bachelor's or Master's program in Computer Science, Software Engineering, or related STEM field.
+- Strong proficiency in Python or Go.
+- Working knowledge of relational databases (PostgreSQL or SQL) and data structures.
+- Familiarity with Git version control and Linux environments.
+- Excellent problem-solving skills and passion for building high-performance systems.
+
+Preferred Qualifications:
+- Experience with Docker, Kubernetes, or containerization.
+- Prior exposure to Redis, Apache Kafka, or cloud platforms (AWS, GCP).
+- Personal portfolio projects or open-source contributions.
+`;
+
+  // Sample 2: Full-Stack Web Development Intern
+  const SAMPLE_JOB_2 = `Full Stack Engineering Intern
+FinTech Innovations Inc. — San Francisco, CA (Remote)
+Compensation: $42 / hour
+Duration: 10-14 weeks
+
+About FinTech Innovations:
+We are building the next generation of financial intelligence dashboards for millions of users worldwide. We are looking for an energetic student intern to join our core product team.
+
+Responsibilities:
+- Build responsive, accessible client-facing user interfaces using React, TypeScript, and modern CSS frameworks (Tailwind CSS).
+- Develop and maintain RESTful API endpoints using Node.js and Express or Python (Flask/FastAPI).
+- Write comprehensive unit and integration tests.
+- Integrate with PostgreSQL database and Redis caching layer.
+
+Requirements:
+- Pursuit of B.S. in Computer Science or Software Engineering (graduating 2026 or 2027).
+- Solid foundation in JavaScript, TypeScript, and HTML5/CSS3.
+- Hands-on experience building web apps with React.
+- Basic familiarity with REST APIs and SQL databases.
+
+Nice-to-Have:
+- Experience with Docker or deploying apps to AWS.
+- Familiarity with CI/CD pipelines (GitHub Actions).
+`;
+
+  document.getElementById("btn-load-sample-1").addEventListener("click", function() {
+    document.getElementById("raw_text").value = SAMPLE_JOB_1;
+    showToast("Loaded Sample 1 (Backend Systems Intern)", "info");
+  });
+
+  document.getElementById("btn-load-sample-2").addEventListener("click", function() {
+    document.getElementById("raw_text").value = SAMPLE_JOB_2;
+    showToast("Loaded Sample 2 (Full Stack Engineering Intern)", "info");
+  });
+</script>
+{% endblock %}
