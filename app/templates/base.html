@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>{% block title %}InternAI — AI-Powered Internship Assistant{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+  <!-- Hidden Server Flash Messages (converted to client-side toasts via main.js) -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="server-flash-message" data-category="{{ category }}" data-message="{{ message }}" style="display:none;"></div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- Global Loading Spinner Overlay -->
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loading-overlay-text">Processing with AI...</div>
+  </div>
+
+  {% if current_user %}
+  <!-- Authenticated App Shell with Sidebar -->
+  <div class="app-wrapper">
+    <!-- Sidebar Navigation -->
+    <aside class="app-sidebar">
+      <div class="sidebar-header">
+        <div class="brand-icon">AI</div>
+        <div>
+          <div class="brand-name">InternAI</div>
+          <span class="brand-badge">Assistant</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Core Navigation</div>
+        <a href="{{ url_for('index') }}" class="nav-item {% if request.path == '/' %}active{% endif %}">
+          <span class="nav-icon">📊</span>
+          <span>Dashboard</span>
+        </a>
+        <a href="{{ url_for('profile.index') }}" class="nav-item {% if '/profile' in request.path %}active{% endif %}">
+          <span class="nav-icon">👤</span>
+          <span>My Profile & Skills</span>
+        </a>
+
+        <div class="nav-section-title">AI Intelligence</div>
+        <a href="{{ url_for('analyzer.index') }}" class="nav-item {% if '/analyzer' in request.path %}active{% endif %}">
+          <span class="nav-icon">🔍</span>
+          <span>Job Analyzer</span>
+        </a>
+        <a href="{{ url_for('matcher.index') }}" class="nav-item {% if '/matcher' in request.path %}active{% endif %}">
+          <span class="nav-icon">🎯</span>
+          <span>Skill Matcher</span>
+        </a>
+        <a href="{{ url_for('roadmap.index') }}" class="nav-item {% if '/roadmap' in request.path %}active{% endif %}">
+          <span class="nav-icon">🗺️</span>
+          <span>Learning Roadmap</span>
+        </a>
+        <a href="{{ url_for('risk.index') }}" class="nav-item {% if '/risk' in request.path %}active{% endif %}">
+          <span class="nav-icon">🛡️</span>
+          <span>Job Risk Analyzer</span>
+        </a>
+
+        <div class="nav-section-title">Application Suite</div>
+        <a href="{{ url_for('cv.index') }}" class="nav-item {% if '/cv' in request.path %}active{% endif %}">
+          <span class="nav-icon">📄</span>
+          <span>AI CV Analyzer</span>
+        </a>
+        <a href="{{ url_for('assistant.index') }}" class="nav-item {% if '/assistant' in request.path %}active{% endif %}">
+          <span class="nav-icon">✍️</span>
+          <span>Cover Letter & Prep</span>
+        </a>
+        <a href="{{ url_for('interview.index') }}" class="nav-item {% if '/interview' in request.path %}active{% endif %}">
+          <span class="nav-icon">🎙️</span>
+          <span>Mock Interview</span>
+        </a>
+        <a href="{{ url_for('tracker.index') }}" class="nav-item {% if '/tracker' in request.path %}active{% endif %}">
+          <span class="nav-icon">📋</span>
+          <span>Internship Tracker</span>
+        </a>
+
+        {% if current_user.role == 'admin' %}
+        <div class="nav-section-title">Administration</div>
+        <a href="{{ url_for('index') }}#admin" class="nav-item">
+          <span class="nav-icon">⚙️</span>
+          <span>Admin Center</span>
+        </a>
+        {% endif %}
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="db-status-chip">
+          <span class="status-dot {% if db_backend == 'oracle' %}oracle{% endif %}"></span>
+          <span>DB: <strong>{{ 'Oracle Thin' if db_backend == 'oracle' else 'Local SQLite' }}</strong></span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="app-main">
+      <!-- Sticky Top Header -->
+      <header class="app-header">
+        <div class="header-left">
+          <button class="mobile-toggle" id="sidebar-toggle" aria-label="Toggle navigation">☰</button>
+          <div style="font-weight: 600; font-size: 1rem; color: var(--secondary);">
+            {% block header_title %}Student Hub{% endblock %}
+          </div>
+        </div>
+
+        <div class="header-right">
+          <div class="user-profile-menu">
+            <div class="user-avatar">
+              {{ current_user.full_name[:2].upper() }}
+            </div>
+            <div class="user-info">
+              <span class="user-name">{{ current_user.full_name }}</span>
+              <span class="user-role-badge">{{ current_user.role }}</span>
+            </div>
+          </div>
+          <a href="{{ url_for('auth.logout') }}" class="btn btn-secondary btn-sm" title="Sign Out">
+            Sign Out
+          </a>
+        </div>
+      </header>
+
+      <!-- Main Body View -->
+      <main class="page-container">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  {% else %}
+  <!-- Public Layout (Landing / Auth) -->
+  <header style="background-color: #ffffff; border-bottom: 1px solid var(--border-color); padding: 0.85rem 2rem; display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      <div class="brand-icon">AI</div>
+      <span class="brand-name" style="font-size: 1.25rem;">InternAI</span>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+      <a href="{{ url_for('auth.login') }}" class="btn btn-secondary btn-sm">Sign In</a>
+      <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-sm">Get Started</a>
+    </div>
+  </header>
+
+  <main>
+    {% block public_content %}{% endblock %}
+  </main>
+  {% endif %}
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
